@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-greeninnowacje}
+      POSTGRES_USER: ${POSTGRES_USER:-greeninnowacje}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-greeninnowacje}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      args:
+        UV_SYNC_ARGS: ""   # dev: include the dev dependency group (pytest, ruff)
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-greeninnowacje}:${POSTGRES_PASSWORD:-greeninnowacje}@db:5432/${POSTGRES_DB:-greeninnowacje}
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+      - /app/.venv
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: greeninnowacje
+          POSTGRES_USER: greeninnowacje
+          POSTGRES_PASSWORD: greeninnowacje
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U greeninnowacje"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DJANGO_SECRET_KEY: ci-only-not-secret
+      DJANGO_DEBUG: "true"  # production settings are verified by `check --deploy` (M4)
+      DATABASE_URL: postgres://greeninnowacje:greeninnowacje@localhost:5432/greeninnowacje
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Migrations up to date
+        run: uv run python manage.py makemigrations --check --dry-run
+      - name: Tests
+        run: uv run pytest

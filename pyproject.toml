@@ -1,7 +1,48 @@
 [project]
 name = "greeninnowacje"
 version = "0.1.0"
-description = "Add your description here"
+description = "Green Innowacje — aplikacja do monitorowania podlewania drzew (MVP)"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "django>=5.2.17,<5.3",
+    "djangorestframework>=3.18",
+    "django-environ>=0.14",
+    "psycopg[binary]>=3.3",
+    "argon2-cffi>=25.1",
+    "qrcode[pil]>=8.2",
+    "httpx>=0.28",
+    "gunicorn>=26",
+    "whitenoise>=6.12",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1",
+    "pytest-django>=4.14",
+    "factory-boy>=3.3",
+    "respx>=0.23",
+    "ruff>=0.16",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["tests.py", "test_*.py"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+extend-exclude = ["poc", "spec"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "DJ", "S"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S105", "S106"]
+"factories.py" = ["S105"]
+"**/migrations/**" = ["E501", "I001"]

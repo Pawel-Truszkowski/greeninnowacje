@@ -1,0 +1,14 @@
+.git
+.venv
+.env
+.env.*
+!.env.example
+**/__pycache__
+.pytest_cache
+.ruff_cache
+staticfiles
+poc
+spec
+assets
+docs
+.DS_Store
