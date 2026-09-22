@@ -16,7 +16,7 @@ Decyzje ustalone z Pawłem (22.09.2026):
 | DB | PostgreSQL 16, psycopg 3 | zgodnie z §3 |
 | Hasła | `argon2-cffi` (`Argon2PasswordHasher` jako pierwszy) | §7 |
 | Konfiguracja | `django-environ`, zmienne z §2 (+ `DJANGO_SECRET_KEY`, `ALLOWED_HOSTS`) | |
-| Rate limit | `django-ratelimit` + cache w DB (`DatabaseCache`, bez Redisa) | §7: 10/15 min/IP na logowanie i rejestrację, 30/min/user na podlanie |
+| Rate limit | własny licznik w PostgreSQL (`core/ratelimit.py`, atomowy `INSERT … ON CONFLICT`), bez Redisa — `django-ratelimit` odrzucony: z cache w DB nie liczy atomowo | §7: 10/15 min/IP na logowanie i rejestrację, 30/min/user na podlanie |
 | Nagłówki | `django-csp`, `SECURE_*`/HSTS w Django, TLS w Caddy | §7 |
 | QR | `qrcode[pil]`, PNG w pamięci | §1 |
 | Mapa | Leaflet 1.9 + markercluster **serwowane lokalnie z `static/`** (bez CDN, prostszy CSP) | |
@@ -54,7 +54,7 @@ Kluczowe decyzje przy mapowaniu §3 na Django:
 **Cel do sprawdzenia:** skan QR → publiczna karta → logowanie → „Oznacz jako podlane” → status się zmienia. Wszystko działa w `docker compose up` na danych z seeda, a na serwerze testowym, jeśli do tego czasu będzie dostępny.
 
 - [x] **22–23.09** — Repozytorium, Dockerfile i Compose (app, db), settings z env, **wszystkie modele i migracje** (w tym trigger append-only i seed `Config`), komenda `seed_demo` (2 miejscowości, 10+ drzew, podlania, pogoda, na bazie `poc/assets/data.js`), CI (ruff + pytest)
-- [ ] **24.09** — Auth: rejestracja (min. 10 znaków, argon2), logowanie i wylogowanie (sesja cookie, CSRF), rate limit, uprawnienia per rola; szkielet **testów macierzy endpoint × rola**; bazowy layout i nagłówek z PoC
+- [x] **24.09** — Auth: rejestracja (min. 10 znaków, argon2), logowanie i wylogowanie (sesja cookie, CSRF), rate limit, uprawnienia per rola; szkielet **testów macierzy endpoint × rola**; bazowy layout i nagłówek z PoC
 - [ ] **25.09** — `GET /api/trees` (bbox/status/locality, tylko aktywne), strona mapy (Leaflet + klastry, filtry z PoC); `GET /api/trees/{id}/public` + test „brak danych osobowych”; `/drzewo/{uuid}` (widok publiczny); `qr.png`
 - [ ] **28.09** — `status.py` + testy wszystkich przypadków brzegowych z §6.2; `POST …/waterings` (natychmiastowe przeliczenie, zwraca nowy status, toast „Dziękujemy!…”); karta rozszerzona; assign/unassign (409); `/moje-drzewa` (sortowanie wg §4)
 - [ ] **29.09** — Rejestracja drzewa: GPS z korektą pinezki, klient Nominatim (User-Agent, throttle, mock w testach), dopasowanie lub utworzenie miejscowości, 409 duplikatu + `force`, ekran sukcesu z QR

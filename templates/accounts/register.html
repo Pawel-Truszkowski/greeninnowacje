@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Rejestracja{% endblock %}
+{% block content %}
+<main class="page narrow">
+  <div class="auth-hero">
+    <img src="{% static 'img/logo.png' %}" alt="">
+    <h1>Zostań opiekunem drzew 🌱</h1>
+    <p class="muted">Tylko 3 pola — konto działa od razu</p>
+  </div>
+
+  <form class="card" method="post" novalidate>
+    {% csrf_token %}
+    {% include "includes/form_errors.html" %}
+    {% include "includes/field.html" with field=form.display_name %}
+    {% include "includes/field.html" with field=form.email %}
+    {% include "includes/field.html" with field=form.password %}
+    <button type="submit" class="btn btn-primary block">Załóż konto</button>
+  </form>
+
+  <p class="muted center">
+    Masz już konto? <a href="{% url 'accounts:login' %}"><b>Zaloguj się</b></a>
+  </p>
+</main>
+{% endblock %}

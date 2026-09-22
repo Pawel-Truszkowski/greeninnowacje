@@ -1,0 +1,89 @@
+"""Endpoint × role authorization matrix (spec §7, §9).
+
+Every endpoint gets a row. When you add an endpoint, add it here with the expected status
+for each role — a missing row is a missing authorization test.
+"""
+
+import pytest
+from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import PermissionDenied
+from django.http import HttpResponse
+from django.test import RequestFactory
+from django.urls import reverse
+
+from accounts.permissions import IsAppAdmin, IsVolunteer, app_admin_required
+from factories import UserFactory
+
+pytestmark = pytest.mark.django_db
+
+ROLES = ("anonymous", "volunteer", "admin")
+
+# (method, url name, url kwargs, {role: expected status})
+ENDPOINTS = [
+    ("get", "home", {}, {"anonymous": 200, "volunteer": 200, "admin": 200}),
+    ("get", "accounts:login", {}, {"anonymous": 200, "volunteer": 302, "admin": 302}),
+    ("get", "accounts:register", {}, {"anonymous": 200, "volunteer": 302, "admin": 302}),
+    ("post", "accounts:logout", {}, {"anonymous": 302, "volunteer": 302, "admin": 302}),
+    ("post", "auth-api:api-logout", {}, {"anonymous": 204, "volunteer": 204, "admin": 204}),
+]
+
+
+@pytest.fixture
+def client_as(client):
+    def make(role):
+        if role != "anonymous":
+            client.force_login(UserFactory(role="admin" if role == "admin" else "volunteer"))
+        return client
+
+    return make
+
+
+@pytest.mark.parametrize("role", ROLES)
+@pytest.mark.parametrize(
+    ("method", "name", "kwargs", "expected"),
+    ENDPOINTS,
+    ids=[f"{m.upper()} {n}" for m, n, *_ in ENDPOINTS],
+)
+def test_endpoint_access(client_as, role, method, name, kwargs, expected):
+    response = getattr(client_as(role), method)(reverse(name, kwargs=kwargs))
+    assert response.status_code == expected[role]
+
+
+@pytest.fixture
+def request_as(rf: RequestFactory):
+    def make(role):
+        request = rf.get("/")
+        request.user = (
+            AnonymousUser()
+            if role == "anonymous"
+            else UserFactory(role="admin" if role == "admin" else "volunteer")
+        )
+        return request
+
+    return make
+
+
+@pytest.mark.parametrize(
+    ("role", "volunteer_ok", "admin_ok"),
+    [("anonymous", False, False), ("volunteer", True, False), ("admin", True, True)],
+)
+def test_drf_permission_classes(request_as, role, volunteer_ok, admin_ok):
+    request = request_as(role)
+    assert IsVolunteer().has_permission(request, None) is volunteer_ok
+    assert IsAppAdmin().has_permission(request, None) is admin_ok
+
+
+class TestAppAdminRequired:
+    view = staticmethod(app_admin_required(lambda request: HttpResponse("ok")))
+
+    def test_anonymous_redirected_to_login(self, request_as):
+        response = self.view(request_as("anonymous"))
+        assert response.status_code == 302
+        assert response.url.startswith(reverse("accounts:login"))
+
+    def test_volunteer_forbidden(self, request_as):
+        with pytest.raises(PermissionDenied):
+            self.view(request_as("volunteer"))
+
+    def test_admin_allowed(self, request_as):
+        assert self.view(request_as("admin")).status_code == 200

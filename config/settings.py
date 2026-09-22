@@ -80,6 +80,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- authentication (spec §7) ---
 AUTH_USER_MODEL = "accounts.User"
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "home"
 
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",
@@ -105,7 +107,12 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    # Hashed, compressed files need `collectstatic`, so only in production (DEBUG=false).
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+        if DEBUG
+        else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    },
 }
 
 # --- e-mail (spec §5.3) ---
@@ -135,6 +142,12 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
     SECURE_HSTS_SECONDS = env.int("DJANGO_HSTS_SECONDS", default=31536000)
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
+# --- rate limiting (spec §7) ---
+# Number of reverse proxies in front of the app that append to X-Forwarded-For
+# (1 behind Caddy). 0 = trust REMOTE_ADDR only; never trust client-supplied headers.
+TRUSTED_PROXY_HOPS = env.int("TRUSTED_PROXY_HOPS", default=0)
+AUTH_RATE_LIMIT = "10/15m"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [

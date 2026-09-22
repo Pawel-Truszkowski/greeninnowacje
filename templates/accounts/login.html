@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Logowanie{% endblock %}
+{% block content %}
+<main class="page narrow">
+  <div class="auth-hero">
+    <img src="{% static 'img/logo.png' %}" alt="">
+    <h1>Dzień dobry! 👋</h1>
+    <p class="muted">Zaloguj się, aby opiekować się drzewami</p>
+  </div>
+
+  <form class="card" method="post" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    {% include "includes/form_errors.html" %}
+    {% include "includes/field.html" with field=form.username %}
+    {% include "includes/field.html" with field=form.password %}
+    <button type="submit" class="btn btn-primary block">Zaloguj się</button>
+  </form>
+
+  <p class="muted center">
+    Nie masz konta? <a href="{% url 'accounts:register' %}"><b>Zarejestruj się</b></a> — to minuta 🌱
+  </p>
+</main>
+{% endblock %}

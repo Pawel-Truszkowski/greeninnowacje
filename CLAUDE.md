@@ -31,8 +31,8 @@ Dependencies live in `pyproject.toml` / `uv.lock` (no requirements.txt). CI: `.g
 
 Single settings module `config/settings.py`, fully env-driven via django-environ (`.env.example` documents every variable). Apps:
 
-- `accounts` — custom `User` (UUID pk, `email` as login stored lowercase, `display_name`, `role` volunteer/admin). **App permissions come from `role`** (`user.is_app_admin`); `is_staff`/`is_superuser` only gate the technical Django admin.
-- `core` — `Config` key/value table holding drought thresholds (seeded by migration); read them via `load_drought_config()` → `DroughtConfig`. Also the `seed_demo` command.
+- `accounts` — custom `User` (UUID pk, `email` as login stored lowercase, `display_name`, `role` volunteer/admin). **App permissions come from `role`** (`user.is_app_admin`); `is_staff`/`is_superuser` only gate the technical Django admin. Role checks live in `accounts/permissions.py` (`IsVolunteer`/`IsAppAdmin` for DRF, `app_admin_required` for views). Auth has HTML pages (`views.py`: `/logowanie`, `/rejestracja`, `/wyloguj`) and JSON endpoints (`api.py`: `/api/auth/*`) sharing the same forms (`RegistrationForm`, `LoginForm`); the JSON ones are plain Django views, not DRF, so CSRF is enforced for anonymous users too (login CSRF).
+- `core` — `Config` key/value table holding drought thresholds (seeded by migration); read them via `load_drought_config()` → `DroughtConfig`. Also the `seed_demo` command and **rate limiting**: `core/ratelimit.py` (`@rate_limit(group, rate, key="ip"|"user")` sets `request.limited`; atomic counters in PostgreSQL, no Redis) with the real client IP from `core/net.py` (`TRUSTED_PROXY_HOPS`).
 - `trees` — `Locality`, `Tree` (UUID pk = permanent public URL), `Watering`, `Assignment`.
 - `weather` — `WeatherDaily` (one row per locality/day; a missing row is NOT 0 mm).
 - `notifications` — `EmailLog` (basis for the max-1-email-per-day rule).
@@ -45,7 +45,9 @@ Invariants enforced in the data layer — keep them:
 
 URLs: `/admin/*` is reserved for the app's own admin panel (spec §4); the Django admin lives at `DJANGO_ADMIN_URL` (default `django-admin/`). DRF defaults are secure-by-default (`IsAuthenticated`, session auth + CSRF); public endpoints must opt in with `AllowAny`.
 
-Tests: pytest-django; shared factory_boy factories in root `factories.py` (`TEST_PASSWORD`), fixtures in root `conftest.py`; per-app tests in `<app>/tests/`. External APIs (Open-Meteo, Nominatim) must be mocked (`respx`).
+Templates: `templates/base.html` (header/nav, server-rendered toast from `messages`), `templates/includes/` form partials; CSS `static/css/app.css` ported from the PoC, font and libraries vendored under `static/` (no CDNs, no inline `style=`/`<script>` — keeps a strict CSP possible).
+
+Tests: pytest-django; **`accounts/tests/test_authz_matrix.py` holds the endpoint × role matrix — every new endpoint must get a row there**; shared factory_boy factories in root `factories.py` (`TEST_PASSWORD`), fixtures in root `conftest.py`; per-app tests in `<app>/tests/`. External APIs (Open-Meteo, Nominatim) must be mocked (`respx`).
 
 ## Rules that shape the UI (from the specs)
 

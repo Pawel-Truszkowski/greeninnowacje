@@ -1,0 +1,40 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Podlewamy drzewa{% endblock %} — Green Innowacje</title>
+<link rel="stylesheet" href="{% static 'css/app.css' %}">
+<link rel="icon" href="{% static 'img/logo.png' %}">
+{% block head %}{% endblock %}
+</head>
+<body>
+
+<header class="app-header">
+  <img src="{% static 'img/logo.png' %}" alt="Green Innowacje" class="logo">
+  <a class="brand" href="{% url 'home' %}">Green Innowacje<small>Podlewamy drzewa 🌱</small></a>
+  <span class="spacer"></span>
+  <nav>
+    {% url 'home' as home_url %}
+    <a href="{{ home_url }}" {% if request.path == home_url %}class="active" aria-current="page"{% endif %}>Mapa</a>
+    {% if user.is_authenticated %}
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="link-button" title="Wyloguj ({{ user.display_name }})">Wyloguj</button>
+      </form>
+    {% else %}
+      {% url 'accounts:login' as login_url %}
+      <a href="{{ login_url }}" {% if request.path == login_url %}class="active" aria-current="page"{% endif %}>Zaloguj</a>
+    {% endif %}
+  </nav>
+</header>
+
+{% block content %}{% endblock %}
+
+{% for message in messages %}
+  <div id="toast" class="auto" role="status">{{ message }}</div>
+{% endfor %}
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

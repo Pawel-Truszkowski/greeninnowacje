@@ -43,3 +43,21 @@ def load_drought_config() -> DroughtConfig:
         days_soon=int(values["DAYS_SOON"]),
         days_urgent=int(values["DAYS_URGENT"]),
     )
+
+
+class RateLimitCounter(models.Model):
+    """Fixed-window hit counter backing core.ratelimit (spec §7)."""
+
+    key = models.CharField(max_length=200)
+    window_start = models.DateTimeField()
+    count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = "rate_limit_counters"
+        constraints = [
+            models.UniqueConstraint(fields=["key", "window_start"], name="rate_limit_key_window"),
+        ]
+        indexes = [models.Index(fields=["window_start"], name="rate_limit_window_idx")]
+
+    def __str__(self):
+        return f"{self.key} @ {self.window_start:%Y-%m-%d %H:%M}: {self.count}"

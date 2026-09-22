@@ -32,6 +32,10 @@ package = false
 DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["tests.py", "test_*.py"]
 addopts = "-ra"
+filterwarnings = [
+    # WhiteNoise serves from finders in dev/tests; STATIC_ROOT only exists after collectstatic.
+    "ignore:No directory at:UserWarning",
+]
 
 [tool.ruff]
 line-length = 100

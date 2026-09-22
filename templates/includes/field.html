@@ -1,0 +1,5 @@
+<label class="field">{{ field.label }}
+  {{ field }}
+  {% if field.help_text and not field.errors %}<span class="optional">{{ field.help_text }}</span>{% endif %}
+  {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+</label>
