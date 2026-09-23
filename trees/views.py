@@ -8,16 +8,20 @@ from django.views.decorators.http import require_POST
 
 from core.ratelimit import rate_limit
 
+from .forms import TreeRegistrationForm
 from .models import Locality, Tree
 from .selectors import extended_tree_card, public_tree_card
 from .services import (
     CaretakerConflict,
+    DuplicateTree,
+    LocalityUnknown,
     assign_caretaker,
     caretaker_of,
     days_since,
     humanized_days,
     my_trees,
     record_watering,
+    register_tree,
     release_caretaker,
 )
 from .status_display import status_labels
@@ -116,3 +120,47 @@ def my_trees_view(request):
         for tree in my_trees(request.user)
     ]
     return render(request, "trees/my_trees.html", {"trees": trees})
+
+
+REGISTERED_MESSAGE = "🎉 Drzewo zarejestrowane! Wydrukuj kod QR i przymocuj go przy drzewie."
+
+
+@login_required
+def register_tree_view(request):
+    """Register a tree while standing next to it (UI doc §8.5).
+
+    Coordinates arrive from static/js/tree-form.js (GPS, corrected by dragging the pin).
+    A tree closer than 2 m is reported back as a question — "is this the same tree?" —
+    and the volunteer can insist by resubmitting with `force`.
+    """
+    form = TreeRegistrationForm(request.POST or None)
+    duplicate = None
+
+    if request.method == "POST" and form.is_valid():
+        try:
+            tree = register_tree(
+                request.user,
+                locality_name=form.cleaned_data["locality_name"],
+                force=request.POST.get("force") == "1",
+                **form.registration_fields(),
+            )
+        except DuplicateTree as found:
+            duplicate = {"tree": found.existing, "distance_m": round(found.distance_m, 1)}
+        except LocalityUnknown:
+            form.add_error(
+                "locality_name",
+                "Nie udało się ustalić miejscowości — wpisz ją proszę ręcznie.",
+            )
+        else:
+            messages.success(request, REGISTERED_MESSAGE)
+            return redirect("trees:card", tree_id=tree.pk)
+
+    context = {
+        "form": form,
+        "duplicate": duplicate,
+        "map_config": {
+            "tilesUrl": settings.MAP_TILES_URL,
+            "attribution": settings.MAP_ATTRIBUTION,
+        },
+    }
+    return render(request, "trees/register.html", context)

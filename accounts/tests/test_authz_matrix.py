@@ -28,6 +28,9 @@ ENDPOINTS = [
     ("get", "trees-api:list", {}, {"anonymous": 200, "volunteer": 200, "admin": 200}),
     ("get", "me-api:trees", {}, {"anonymous": 403, "volunteer": 200, "admin": 200}),
     ("get", "trees:my", {}, {"anonymous": 302, "volunteer": 200, "admin": 200}),
+    ("get", "trees:register", {}, {"anonymous": 302, "volunteer": 200, "admin": 200}),
+    # 400: empty payload — the point is that anonymous users never get that far.
+    ("post", "trees-api:create", {}, {"anonymous": 403, "volunteer": 400, "admin": 400}),
 ]
 
 # Same, for endpoints that need an existing tree (kwargs built per test).

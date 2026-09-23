@@ -5,23 +5,33 @@ import math
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import APIException, Throttled, ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT, HTTP_409_CONFLICT
+from rest_framework.status import (
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_409_CONFLICT,
+)
 
 from accounts.permissions import IsVolunteer
 from core.ratelimit import rate_limit
 
+from .forms import TreeRegistrationForm
 from .models import Tree
 from .qr import qr_png, tree_card_url
 from .selectors import extended_tree_card, map_tree_payload, map_trees, public_tree_card
 from .services import (
     CaretakerConflict,
+    DuplicateTree,
+    LocalityUnknown,
     assign_caretaker,
     my_trees,
     record_watering,
+    register_tree,
     release_caretaker,
 )
 
@@ -175,4 +185,53 @@ def my_trees_list(request):
             map_tree_payload(tree) | {"locality": tree.locality.name}
             for tree in my_trees(request.user)
         ]
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsVolunteer])
+def tree_create(request):
+    """Register a tree (spec §4). A tree within 2 m gets 409; retry with force=true."""
+    data = request.data
+    form = TreeRegistrationForm(data)
+    if not form.is_valid():
+        return Response({"errors": form.errors.get_json_data()}, status=HTTP_400_BAD_REQUEST)
+
+    force = str(data.get("force", "")).lower() in {"1", "true", "yes"}
+    try:
+        tree = register_tree(
+            request.user,
+            locality_name=form.cleaned_data["locality_name"],
+            force=force,
+            **form.registration_fields(),
+        )
+    except DuplicateTree as duplicate:
+        return Response(
+            {
+                "detail": str(duplicate),
+                "duplicate": {
+                    "id": str(duplicate.existing.pk),
+                    "species": duplicate.existing.species,
+                    "planted_on": duplicate.existing.planted_on,
+                    "distance_m": round(duplicate.distance_m, 1),
+                    "url": reverse("trees:card", kwargs={"tree_id": duplicate.existing.pk}),
+                },
+            },
+            status=HTTP_409_CONFLICT,
+        )
+    except LocalityUnknown as unknown:
+        return Response(
+            {"errors": {"locality_name": [{"message": str(unknown), "code": "required"}]}},
+            status=HTTP_400_BAD_REQUEST,
+        )
+
+    return Response(
+        {
+            "id": str(tree.pk),
+            "status": tree.status,
+            "locality": tree.locality.name,
+            "url": reverse("trees:card", kwargs={"tree_id": tree.pk}),
+            "qr_url": reverse("trees-api:qr", kwargs={"tree_id": tree.pk}),
+        },
+        status=HTTP_201_CREATED,
     )

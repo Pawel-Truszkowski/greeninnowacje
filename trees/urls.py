@@ -7,6 +7,7 @@ app_name = "trees"
 urlpatterns = [
     path("", views.map_view, name="map"),
     path("moje-drzewa", views.my_trees_view, name="my"),
+    path("rejestracja-drzewa", views.register_tree_view, name="register"),
     path("drzewo/<uuid:tree_id>", views.tree_card, name="card"),
     path("drzewo/<uuid:tree_id>/podlano", views.water_tree, name="water"),
     path("drzewo/<uuid:tree_id>/opieka", views.take_care, name="take-care"),
@@ -15,6 +16,7 @@ urlpatterns = [
 
 api_urlpatterns = [
     path("", api.tree_list, name="list"),
+    path("nowe", api.tree_create, name="create"),
     path("<uuid:tree_id>", api.tree_extended_card, name="detail"),
     path("<uuid:tree_id>/public", api.tree_public_card, name="public"),
     path("<uuid:tree_id>/qr.png", api.tree_qr, name="qr"),

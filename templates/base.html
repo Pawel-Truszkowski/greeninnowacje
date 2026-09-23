@@ -18,6 +18,8 @@
     {% url 'trees:map' as home_url %}
     <a href="{{ home_url }}" {% if request.path == home_url %}class="active" aria-current="page"{% endif %}>Mapa</a>
     {% if user.is_authenticated %}
+      {% url 'trees:register' as register_url %}
+      <a href="{{ register_url }}" {% if request.path == register_url %}class="active" aria-current="page"{% endif %}>+ Drzewo</a>
       {% url 'trees:my' as my_url %}
       <a href="{{ my_url }}" {% if request.path == my_url %}class="active" aria-current="page"{% endif %}>Moje drzewa</a>
       <form method="post" action="{% url 'accounts:logout' %}">

@@ -29,6 +29,10 @@ APP_BASE_URL = env("APP_BASE_URL", default="http://localhost:8000").rstrip("/")
 MAP_TILES_URL = env("MAP_TILES_URL", default="https://tile.openstreetmap.de/{z}/{x}/{y}.png")
 MAP_ATTRIBUTION = env("MAP_ATTRIBUTION", default="&copy; OpenStreetMap")
 NOMINATIM_URL = env("NOMINATIM_URL", default="https://nominatim.openstreetmap.org")
+# OSM policy requires an identifying User-Agent with contact details (spec §5.2).
+NOMINATIM_USER_AGENT = env(
+    "NOMINATIM_USER_AGENT", default="GreenInnowacje-Drzewa/1.0 (kontakt@greeninnowacje.pl)"
+)
 OPEN_METEO_URL = env("OPEN_METEO_URL", default="https://api.open-meteo.com/v1/forecast")
 # Django admin deliberately NOT at /admin/ — that path belongs to the app's panel (spec §4).
 DJANGO_ADMIN_URL = env("DJANGO_ADMIN_URL", default="django-admin/")

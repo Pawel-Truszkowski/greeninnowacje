@@ -1,0 +1,71 @@
+/* Tree registration (UI doc §8.5): device GPS with a draggable pin for corrections.
+ *
+ * The hidden lat/lng/accuracy inputs are the only channel to the server, and the server
+ * revalidates them — the map is a convenience, not a source of trust.
+ */
+(function () {
+  'use strict';
+
+  var mapEl = document.getElementById('pick-map');
+  var statusEl = document.getElementById('gps-status');
+  var latInput = document.getElementById('id_lat');
+  var lngInput = document.getElementById('id_lng');
+  var accuracyInput = document.getElementById('id_gps_accuracy_m');
+
+  var DEFAULT_CENTER = [52.871, 19.651];
+  var map = L.map(mapEl).setView(DEFAULT_CENTER, 17);
+  L.tileLayer(mapEl.dataset.tilesUrl, {
+    maxZoom: 19,
+    attribution: mapEl.dataset.attribution,
+  }).addTo(map);
+
+  var marker = L.marker(DEFAULT_CENTER, { draggable: true }).addTo(map);
+
+  function round6(value) {
+    return Math.round(value * 1e6) / 1e6;
+  }
+
+  function setPosition(lat, lng, accuracy) {
+    marker.setLatLng([lat, lng]);
+    latInput.value = round6(lat);
+    lngInput.value = round6(lng);
+    if (accuracy !== undefined) accuracyInput.value = Math.round(accuracy * 10) / 10;
+  }
+
+  // Keep a previously entered position (e.g. after a validation error or duplicate check).
+  if (latInput.value && lngInput.value) {
+    var saved = [parseFloat(latInput.value), parseFloat(lngInput.value)];
+    map.setView(saved, 18);
+    marker.setLatLng(saved);
+    statusEl.textContent = 'Lokalizacja z poprzedniej próby — sprawdź pinezkę.';
+  } else if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function (position) {
+        var coords = position.coords;
+        setPosition(coords.latitude, coords.longitude, coords.accuracy);
+        map.setView([coords.latitude, coords.longitude], 19);
+        statusEl.textContent = 'Dokładność GPS: ±' + Math.round(coords.accuracy) + ' m.';
+      },
+      function () {
+        statusEl.textContent = 'Brak zgody na lokalizację — wskaż miejsce, przesuwając pinezkę.';
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  } else {
+    statusEl.textContent = 'Twoja przeglądarka nie udostępnia lokalizacji — przesuń pinezkę.';
+  }
+
+  marker.on('dragend', function () {
+    var position = marker.getLatLng();
+    // A hand-placed pin has no GPS accuracy to report.
+    accuracyInput.value = '';
+    setPosition(position.lat, position.lng);
+    statusEl.textContent = 'Pinezka ustawiona ręcznie.';
+  });
+
+  map.on('click', function (event) {
+    accuracyInput.value = '';
+    setPosition(event.latlng.lat, event.latlng.lng);
+    statusEl.textContent = 'Pinezka ustawiona ręcznie.';
+  });
+})();

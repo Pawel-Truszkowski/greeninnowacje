@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Zarejestruj drzewo{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="page narrow">
+  <h1>Zarejestruj drzewo 🌳</h1>
+  <p class="muted">Stań przy drzewie — pobierzemy lokalizację z telefonu. Pinezkę możesz przesunąć.</p>
+
+  {% if duplicate %}
+    <div class="card duplicate-warning" role="alert">
+      <h2>Czy to nie to samo drzewo?</h2>
+      <p>{{ duplicate.distance_m }} m stąd jest już zarejestrowane drzewo:
+        <a href="{% url 'trees:card' tree_id=duplicate.tree.pk %}">{{ duplicate.tree.species }}</a>
+        (posadzone {{ duplicate.tree.planted_on|date:"j E Y" }}).</p>
+      <p class="muted">Jeśli to jednak inne drzewo, zapisz je mimo wszystko.</p>
+    </div>
+  {% endif %}
+
+  <form class="card" method="post" novalidate>
+    {% csrf_token %}
+    {% include "includes/form_errors.html" %}
+
+    <div id="pick-map" class="pick-map"
+         data-tiles-url="{{ map_config.tilesUrl }}" data-attribution="{{ map_config.attribution }}"></div>
+    <p class="muted gps-status" id="gps-status">Pobieram lokalizację…</p>
+    {{ form.lat }}{{ form.lng }}{{ form.gps_accuracy_m }}
+
+    {% include "includes/field.html" with field=form.species %}
+    {% include "includes/field.html" with field=form.planted_on %}
+    {% include "includes/field.html" with field=form.locality_name %}
+    {% include "includes/field.html" with field=form.planted_by %}
+    {% include "includes/field.html" with field=form.notes %}
+
+    {% if duplicate %}
+      <input type="hidden" name="force" value="1">
+      <button type="submit" class="btn btn-primary block">To inne drzewo — zapisz mimo to</button>
+      <a class="btn btn-ghost block" href="{% url 'trees:card' tree_id=duplicate.tree.pk %}">To jest to drzewo — pokaż jego kartę</a>
+    {% else %}
+      <button type="submit" class="btn btn-primary block">Zapisz drzewo</button>
+    {% endif %}
+  </form>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'js/tree-form.js' %}"></script>
+{% endblock %}

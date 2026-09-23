@@ -13,7 +13,9 @@ from django.utils import timezone
 
 from core.models import load_drought_config
 
-from .models import Assignment, Tree, Watering
+from .geo import DUPLICATE_RADIUS_M, bbox_around, haversine_m
+from .models import Assignment, Locality, Tree, Watering
+from .nominatim import reverse_locality
 from .selectors import weather_series
 from .status import StatusInputs, compute_status, missing_rain_days
 
@@ -143,3 +145,81 @@ def humanized_days(days):
     if days == 1:
         return "wczoraj"
     return f"{days} dni temu"
+
+
+class DuplicateTree(Exception):
+    """A tree is already registered at (practically) the same spot."""
+
+    def __init__(self, existing, distance_m):
+        super().__init__("W tym miejscu jest już zarejestrowane drzewo.")
+        self.existing = existing
+        self.distance_m = distance_m
+
+
+class LocalityUnknown(Exception):
+    """Reverse geocoding failed and the volunteer did not supply a name."""
+
+
+def find_duplicate(lat, lng, radius_m=DUPLICATE_RADIUS_M):
+    """Return (tree, distance_m) for an active tree within `radius_m`, else None.
+
+    Two volunteers registering the same tree at an event is the realistic case this
+    guards against (spec §4: respond 409 and let the user confirm).
+
+    Species is deliberately ignored: phone GPS is accurate to 3–8 m and volunteers are
+    not botanists, so "a different species 1.5 m away" is more likely to be the same tree
+    named differently than two trees planted that close. The user has the final say via
+    `force`. Archived trees do not count — their spot is free for a new planting.
+    """
+    box = bbox_around(lat, lng, radius_m)
+    candidates = Tree.objects.filter(
+        lifecycle=Tree.Lifecycle.ACTIVE,
+        lat__gte=box["min_lat"],
+        lat__lte=box["max_lat"],
+        lng__gte=box["min_lng"],
+        lng__lte=box["max_lng"],
+    )
+    # The box is a generous prefilter — its corners lie further away than radius_m — so
+    # the exact distance decides. It normally leaves zero or one candidate.
+    nearby = [
+        (tree, distance)
+        for tree, distance in (
+            (tree, haversine_m(lat, lng, tree.lat, tree.lng)) for tree in candidates
+        )
+        if distance <= radius_m
+    ]
+    if not nearby:
+        return None
+    return min(nearby, key=lambda pair: pair[1])
+
+
+def resolve_locality(lat, lng, name=None):
+    """Find or create the locality for these coordinates (spec §5.2).
+
+    A name typed by the volunteer wins over the geocoder; matching is case-insensitive
+    so "sierpc" and "Sierpc" stay one locality. A brand-new locality takes the tree's
+    coordinates as its centroid — good enough for fetching weather.
+    """
+    name = (name or "").strip() or reverse_locality(lat, lng)
+    if not name:
+        raise LocalityUnknown("Nie udało się ustalić miejscowości.")
+
+    existing = Locality.objects.filter(name__iexact=name).first()
+    if existing:
+        return existing
+    return Locality.objects.create(name=name, lat=lat, lng=lng)
+
+
+@transaction.atomic
+def register_tree(user, *, locality_name=None, force=False, **fields):
+    """Register a tree: duplicate check, locality, then the tree itself (spec §4)."""
+    if not force:
+        duplicate = find_duplicate(fields["lat"], fields["lng"])
+        if duplicate:
+            existing, distance_m = duplicate
+            raise DuplicateTree(existing, distance_m)
+
+    locality = resolve_locality(fields["lat"], fields["lng"], locality_name)
+    tree = Tree.objects.create(created_by=user, locality=locality, **fields)
+    recompute_tree_status(tree)
+    return tree

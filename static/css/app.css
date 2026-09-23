@@ -755,3 +755,15 @@ input[aria-invalid="true"] { border-color: var(--urgent); }
 .water-form { margin-top: 16px; }
 .status-row-sm { margin-top: 6px; }
 .tree-item form { margin: 0; }
+
+/* ---------- tree registration ---------- */
+
+.pick-map {
+  height: 260px;
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  border: 1px solid var(--line);
+}
+.gps-status { margin: 0 0 12px; }
+.duplicate-warning { border: 2px solid var(--soon); }
+.duplicate-warning h2 { margin-top: 0; color: var(--soon); }
