@@ -23,7 +23,11 @@ CSRF_TRUSTED_ORIGINS = env("DJANGO_CSRF_TRUSTED_ORIGINS")
 
 # --- application config (spec §2) ---
 APP_BASE_URL = env("APP_BASE_URL", default="http://localhost:8000").rstrip("/")
-MAP_TILES_URL = env("MAP_TILES_URL", default="https://tile.openstreetmap.org/{z}/{x}/{y}.png")
+# Dev default: OSM Deutschland tiles (no key, fine for light development use).
+# Production uses MapTiler with a domain-restricted key (spec §1). Note that
+# tile.openstreetmap.org blocks application traffic under its usage policy.
+MAP_TILES_URL = env("MAP_TILES_URL", default="https://tile.openstreetmap.de/{z}/{x}/{y}.png")
+MAP_ATTRIBUTION = env("MAP_ATTRIBUTION", default="&copy; OpenStreetMap")
 NOMINATIM_URL = env("NOMINATIM_URL", default="https://nominatim.openstreetmap.org")
 OPEN_METEO_URL = env("OPEN_METEO_URL", default="https://api.open-meteo.com/v1/forecast")
 # Django admin deliberately NOT at /admin/ — that path belongs to the app's panel (spec §4).
@@ -81,7 +85,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # --- authentication (spec §7) ---
 AUTH_USER_MODEL = "accounts.User"
 LOGIN_URL = "accounts:login"
-LOGIN_REDIRECT_URL = "home"
+LOGIN_REDIRECT_URL = "trees:map"
 
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",
@@ -133,7 +137,11 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_REFERRER_POLICY = "same-origin"
+# Not "same-origin": that strips Referer from cross-origin requests, and map tile
+# providers restrict API keys by referrer — the map would silently render "invalid key"
+# tiles. This policy sends only the origin (no path) to other sites, so tile providers
+# see who is asking while /drzewo/<uuid> never leaks.
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 X_FRAME_OPTIONS = "DENY"
 if not DEBUG:
     SESSION_COOKIE_SECURE = True

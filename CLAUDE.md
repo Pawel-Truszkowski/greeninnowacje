@@ -33,7 +33,7 @@ Single settings module `config/settings.py`, fully env-driven via django-environ
 
 - `accounts` — custom `User` (UUID pk, `email` as login stored lowercase, `display_name`, `role` volunteer/admin). **App permissions come from `role`** (`user.is_app_admin`); `is_staff`/`is_superuser` only gate the technical Django admin. Role checks live in `accounts/permissions.py` (`IsVolunteer`/`IsAppAdmin` for DRF, `app_admin_required` for views). Auth has HTML pages (`views.py`: `/logowanie`, `/rejestracja`, `/wyloguj`) and JSON endpoints (`api.py`: `/api/auth/*`) sharing the same forms (`RegistrationForm`, `LoginForm`); the JSON ones are plain Django views, not DRF, so CSRF is enforced for anonymous users too (login CSRF).
 - `core` — `Config` key/value table holding drought thresholds (seeded by migration); read them via `load_drought_config()` → `DroughtConfig`. Also the `seed_demo` command and **rate limiting**: `core/ratelimit.py` (`@rate_limit(group, rate, key="ip"|"user")` sets `request.limited`; atomic counters in PostgreSQL, no Redis) with the real client IP from `core/net.py` (`TRUSTED_PROXY_HOPS`).
-- `trees` — `Locality`, `Tree` (UUID pk = permanent public URL), `Watering`, `Assignment`.
+- `trees` — `Locality`, `Tree` (UUID pk = permanent public URL), `Watering`, `Assignment`. Read queries live in `trees/selectors.py`: **`public_tree_card()` is the single definition of what an anonymous visitor may see** (watering history as dates only, caretaker as a bool) and feeds both the HTML card and `/api/trees/{id}/public` — extend it there, never in a view. Status label/hint/icon come from `trees/status_display.py` (template tag `{% status_badge %}`, and the map script via `json_script`).
 - `weather` — `WeatherDaily` (one row per locality/day; a missing row is NOT 0 mm).
 - `notifications` — `EmailLog` (basis for the max-1-email-per-day rule).
 
@@ -44,6 +44,8 @@ Invariants enforced in the data layer — keep them:
 - DB table names match the spec (`db_table = "users"`, `"trees"`, …).
 
 URLs: `/admin/*` is reserved for the app's own admin panel (spec §4); the Django admin lives at `DJANGO_ADMIN_URL` (default `django-admin/`). DRF defaults are secure-by-default (`IsAuthenticated`, session auth + CSRF); public endpoints must opt in with `AllowAny`.
+
+Front-end: only the map runs JavaScript (`static/js/map.js`, fed by `/api/trees`); everything else is server-rendered. Values coming from the API go into the DOM via `textContent` — never `innerHTML` — because species/notes are user input. Charts use SVG geometry instead of `style=` so a strict CSP stays possible.
 
 Templates: `templates/base.html` (header/nav, server-rendered toast from `messages`), `templates/includes/` form partials; CSS `static/css/app.css` ported from the PoC, font and libraries vendored under `static/` (no CDNs, no inline `style=`/`<script>` — keeps a strict CSP possible).
 

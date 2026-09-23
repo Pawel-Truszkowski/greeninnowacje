@@ -52,7 +52,7 @@ class TestRegistrationPage:
 class TestLoginPage:
     def test_success_redirects_home(self, client, user):
         response = client.post(LOGIN, {"username": user.email, "password": TEST_PASSWORD})
-        assert response.status_code == 302 and response.url == reverse("home")
+        assert response.status_code == 302 and response.url == reverse("trees:map")
         assert get_user(client) == user
 
     def test_wrong_password(self, client, user):
@@ -146,7 +146,7 @@ class TestCsrf:
 
     def test_api_login_with_token(self, user):
         csrf_client = Client(enforce_csrf_checks=True)
-        csrf_client.get(reverse("home"))  # sets the csrftoken cookie
+        csrf_client.get(reverse("trees:map"))  # sets the csrftoken cookie
         token = csrf_client.cookies["csrftoken"].value
         response = csrf_client.post(
             API_LOGIN,

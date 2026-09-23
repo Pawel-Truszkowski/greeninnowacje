@@ -20,11 +20,19 @@ ROLES = ("anonymous", "volunteer", "admin")
 
 # (method, url name, url kwargs, {role: expected status})
 ENDPOINTS = [
-    ("get", "home", {}, {"anonymous": 200, "volunteer": 200, "admin": 200}),
+    ("get", "trees:map", {}, {"anonymous": 200, "volunteer": 200, "admin": 200}),
     ("get", "accounts:login", {}, {"anonymous": 200, "volunteer": 302, "admin": 302}),
     ("get", "accounts:register", {}, {"anonymous": 200, "volunteer": 302, "admin": 302}),
     ("post", "accounts:logout", {}, {"anonymous": 302, "volunteer": 302, "admin": 302}),
     ("post", "auth-api:api-logout", {}, {"anonymous": 204, "volunteer": 204, "admin": 204}),
+    ("get", "trees-api:list", {}, {"anonymous": 200, "volunteer": 200, "admin": 200}),
+]
+
+# Same, for endpoints that need an existing tree (kwargs built per test).
+TREE_ENDPOINTS = [
+    ("get", "trees:card", {"anonymous": 200, "volunteer": 200, "admin": 200}),
+    ("get", "trees-api:public", {"anonymous": 200, "volunteer": 200, "admin": 200}),
+    ("get", "trees-api:qr", {"anonymous": 200, "volunteer": 200, "admin": 200}),
 ]
 
 
@@ -47,6 +55,17 @@ def client_as(client):
 def test_endpoint_access(client_as, role, method, name, kwargs, expected):
     response = getattr(client_as(role), method)(reverse(name, kwargs=kwargs))
     assert response.status_code == expected[role]
+
+
+@pytest.mark.parametrize("role", ROLES)
+@pytest.mark.parametrize(
+    ("method", "name", "expected"),
+    TREE_ENDPOINTS,
+    ids=[f"{m.upper()} {n}" for m, n, *_ in TREE_ENDPOINTS],
+)
+def test_tree_endpoint_access(client_as, tree, role, method, name, expected):
+    url = reverse(name, kwargs={"tree_id": tree.pk})
+    assert getattr(client_as(role), method)(url).status_code == expected[role]
 
 
 @pytest.fixture

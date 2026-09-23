@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Mapa drzew{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+<link rel="stylesheet" href="{% static 'vendor/markercluster/MarkerCluster.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="map-page">
+  <div id="map"></div>
+
+  <div class="map-overlay-top">
+    <div class="map-toolbar">
+      <div class="chips" id="status-filters">
+        <button type="button" class="chip active" data-status="">Wszystkie <b id="count-all"></b></button>
+        <button type="button" class="chip" data-status="URGENT">🔴 Pilne</button>
+        <button type="button" class="chip" data-status="SOON">🟠 Wkrótce</button>
+        <button type="button" class="chip" data-status="OK">🟢 Podlane</button>
+      </div>
+      <select id="locality-filter" aria-label="Miejscowość">
+        <option value="">Wszystkie miejscowości</option>
+        {% for locality in localities %}
+          <option value="{{ locality.pk }}">{{ locality.name }} ({{ locality.tree_count }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="map-legend">
+      <span><i class="legend-ok"></i> Podlane</span>
+      <span><i class="legend-soon"></i> Wkrótce podlać</span>
+      <span><i class="legend-urgent"></i> Pilnie podlać</span>
+    </div>
+  </div>
+
+  <p class="map-error" id="map-error" hidden>Nie udało się pobrać drzew. Sprawdź połączenie i odśwież stronę.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ map_config|json_script:"map-config" }}
+<script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'vendor/markercluster/leaflet.markercluster.js' %}"></script>
+<script src="{% static 'js/map.js' %}"></script>
+{% endblock %}

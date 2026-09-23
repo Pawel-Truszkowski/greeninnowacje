@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load trees_tags %}
+{% block title %}{{ card.species }}{% endblock %}
+
+{% block content %}
+<main class="page">
+  <p class="pill">👋 Widok publiczny — logowanie niepotrzebne</p>
+
+  {% if card.lifecycle == "archived" %}
+    <p class="notice">To drzewo nie jest już aktywne. Historia pozostaje dostępna.</p>
+  {% endif %}
+
+  <div class="card">
+    <h1 class="tight">{{ card.species }}</h1>
+    <div class="muted">📍 {{ card.locality.name }} · posadzono {{ card.planted_on|date:"j E Y" }}</div>
+    <div class="status-row">{% status_badge card.status big=True %}</div>
+    <p class="muted tight">{{ card.status_hint }}.{% if card.status != "OK" %} To drzewo czeka na Ciebie 💧{% endif %}</p>
+  </div>
+
+  <div class="card photo-placeholder">
+    <span class="art">🌳</span>
+    Zdjęcie drzewa — planowane w Etapie 2
+  </div>
+
+  <div class="card">
+    <h2>Informacje</h2>
+    <dl class="kv">
+      <dt>Gatunek</dt><dd>{{ card.species }}</dd>
+      <dt>Data zasadzenia</dt><dd>{{ card.planted_on|date:"j E Y" }}</dd>
+      {% if card.planted_by %}<dt>Kto sadził</dt><dd>{{ card.planted_by }}</dd>{% endif %}
+      <dt>Opiekun</dt>
+      <dd>{% if card.has_caretaker %}💚 Tak — drzewo ma opiekuna{% else %}🙋 Nie — możesz się zgłosić!{% endif %}</dd>
+      {% if card.notes %}<dt>Notatki</dt><dd>{{ card.notes }}</dd>{% endif %}
+    </dl>
+  </div>
+
+  <div class="card">
+    <h2>Historia podlewania</h2>
+    {% if card.waterings %}
+      <ul class="timeline">
+        {% for day in card.waterings %}
+          <li><span class="dot">💧</span>
+            <span class="when">{{ day|date:"j E Y" }}</span>
+            <span class="who">podlane przez wolontariusza</span></li>
+        {% endfor %}
+      </ul>
+      {% if card.waterings_total > card.waterings|length %}
+        <p class="muted">Pokazujemy {{ card.waterings|length }} ostatnich z {{ card.waterings_total }} podlań.</p>
+      {% endif %}
+    {% else %}
+      <p class="muted">To drzewo zostało niedawno posadzone — nie ma jeszcze historii podlewania. 🌱</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Pogoda w miejscowości {{ card.locality.name }}</h2>
+    <p class="muted tight">Opady z ostatnich 14 dni · suma z ostatnich {{ card.rain_window_days }} dni:
+      <b>{{ card.rain_window_mm|floatformat:1 }} mm</b> (próg: {{ card.rain_threshold_mm|floatformat:0 }} mm)
+      {% if card.weather_missing_days %}<br>Braki w danych pogodowych: {{ card.weather_missing_days }} z {{ card.rain_window_days }} dni.{% endif %}
+    </p>
+    {% weather_chart card.weather %}
+  </div>
+
+  {% if not user.is_authenticated %}
+    <div class="card center">
+      <h2>Chcesz pomóc temu drzewu?</h2>
+      <p class="muted">Załóż konto wolontariusza — zajmie to minutę.</p>
+      <div class="row center-row">
+        <a class="btn btn-primary" href="{% url 'accounts:register' %}">Zostań opiekunem 🌱</a>
+        <a class="btn btn-ghost" href="{% url 'accounts:login' %}">Mam już konto</a>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="card qr-box">
+    <h2 class="tight">Kod QR tego drzewa</h2>
+    <img class="qr-frame" width="160" height="160" alt="Kod QR prowadzący do tej karty"
+         src="{% url 'trees-api:qr' tree_id=card.id %}">
+    <a class="btn btn-secondary" href="{% url 'trees-api:qr' tree_id=card.id %}?download=1">Pobierz kod QR</a>
+  </div>
+</main>
+{% endblock %}

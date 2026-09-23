@@ -694,3 +694,58 @@ input[aria-invalid="true"] { border-color: var(--urgent); }
   align-items: center;
 }
 .app-header nav .link-button:hover { background: rgba(255,255,255,.12); }
+
+/* ---------- tree card + map: classes replacing the PoC's inline styles ---------- */
+
+.tight { margin: 0 0 2px; }
+.status-row { margin: 16px 0; }
+.center-row { justify-content: center; }
+.notice {
+  background: var(--soon-bg);
+  color: var(--soon);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.card .art { font-size: 2.2rem; }
+
+.map-legend i.legend-ok { background: var(--ok); }
+.map-legend i.legend-soon { background: var(--soon); }
+.map-legend i.legend-urgent { background: var(--urgent); }
+
+.map-error {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1200;
+  background: var(--urgent-bg);
+  color: var(--urgent);
+  font-weight: 700;
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  margin: 0;
+  max-width: 90%;
+}
+
+.popup-title { font-size: 1.05rem; display: block; margin-bottom: 6px; }
+.popup-meta { font-size: .82rem; margin: 8px 0 0; }
+.popup-link { margin-top: 10px; min-height: 40px; padding: 8px 16px; font-size: .9rem; }
+
+/* ---------- weather chart (SVG: heights are attributes, CSP-safe) ---------- */
+
+.weather-svg { width: 100%; height: auto; overflow: visible; }
+.weather-svg .bar { fill: #64b5f6; }
+.weather-svg .bar-dry { fill: var(--line); }
+.weather-svg .bar-missing { fill: #cfc8b4; opacity: .6; }
+.weather-svg .bar-label {
+  font-size: 9px;
+  font-weight: 700;
+  fill: var(--ink-soft);
+  transform: rotate(-45deg);
+  transform-box: fill-box;
+  transform-origin: right top;
+}
+
+.qr-box .qr-frame { background: #fff; }

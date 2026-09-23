@@ -12,10 +12,10 @@
 
 <header class="app-header">
   <img src="{% static 'img/logo.png' %}" alt="Green Innowacje" class="logo">
-  <a class="brand" href="{% url 'home' %}">Green Innowacje<small>Podlewamy drzewa 🌱</small></a>
+  <a class="brand" href="{% url 'trees:map' %}">Green Innowacje<small>Podlewamy drzewa 🌱</small></a>
   <span class="spacer"></span>
   <nav>
-    {% url 'home' as home_url %}
+    {% url 'trees:map' as home_url %}
     <a href="{{ home_url }}" {% if request.path == home_url %}class="active" aria-current="page"{% endif %}>Mapa</a>
     {% if user.is_authenticated %}
       <form method="post" action="{% url 'accounts:logout' %}">

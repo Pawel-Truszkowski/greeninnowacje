@@ -55,7 +55,7 @@ Kluczowe decyzje przy mapowaniu §3 na Django:
 
 - [x] **22–23.09** — Repozytorium, Dockerfile i Compose (app, db), settings z env, **wszystkie modele i migracje** (w tym trigger append-only i seed `Config`), komenda `seed_demo` (2 miejscowości, 10+ drzew, podlania, pogoda, na bazie `poc/assets/data.js`), CI (ruff + pytest)
 - [x] **24.09** — Auth: rejestracja (min. 10 znaków, argon2), logowanie i wylogowanie (sesja cookie, CSRF), rate limit, uprawnienia per rola; szkielet **testów macierzy endpoint × rola**; bazowy layout i nagłówek z PoC
-- [ ] **25.09** — `GET /api/trees` (bbox/status/locality, tylko aktywne), strona mapy (Leaflet + klastry, filtry z PoC); `GET /api/trees/{id}/public` + test „brak danych osobowych”; `/drzewo/{uuid}` (widok publiczny); `qr.png`
+- [x] **25.09** — `GET /api/trees` (bbox/status/locality, tylko aktywne), strona mapy (Leaflet + klastry, filtry z PoC); `GET /api/trees/{id}/public` + test „brak danych osobowych”; `/drzewo/{uuid}` (widok publiczny); `qr.png`
 - [ ] **28.09** — `status.py` + testy wszystkich przypadków brzegowych z §6.2; `POST …/waterings` (natychmiastowe przeliczenie, zwraca nowy status, toast „Dziękujemy!…”); karta rozszerzona; assign/unassign (409); `/moje-drzewa` (sortowanie wg §4)
 - [ ] **29.09** — Rejestracja drzewa: GPS z korektą pinezki, klient Nominatim (User-Agent, throttle, mock w testach), dopasowanie lub utworzenie miejscowości, 409 duplikatu + `force`, ekran sukcesu z QR
 - [ ] **30.09** — Stabilizacja, ręczne E2E ścieżek z §9, README (uruchomienie jedną komendą), demo dla mentora

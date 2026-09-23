@@ -1,0 +1,10 @@
+<svg class="weather-svg" viewBox="0 0 {{ width }} {{ label_y|add:4 }}" role="img"
+     aria-label="Opady w ostatnich dniach">
+  {% for bar in bars %}
+    <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}" rx="3"
+          class="bar{% if bar.missing %} bar-missing{% elif bar.dry %} bar-dry{% endif %}">
+      <title>{{ bar.label|date:"j E" }}: {% if bar.missing %}brak danych{% else %}{{ bar.value }} mm{% endif %}</title>
+    </rect>
+    <text x="{{ bar.x|add:bar.width }}" y="{{ label_y }}" class="bar-label" text-anchor="end">{{ bar.label|date:"d.m" }}</text>
+  {% endfor %}
+</svg>
