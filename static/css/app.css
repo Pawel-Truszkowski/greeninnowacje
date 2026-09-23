@@ -749,3 +749,9 @@ input[aria-invalid="true"] { border-color: var(--urgent); }
 }
 
 .qr-box .qr-frame { background: #fff; }
+
+/* ---------- watering actions ---------- */
+
+.water-form { margin-top: 16px; }
+.status-row-sm { margin-top: 6px; }
+.tree-item form { margin: 0; }

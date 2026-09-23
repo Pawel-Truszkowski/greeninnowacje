@@ -108,3 +108,25 @@ def public_tree_card(tree, today=None):
         "rain_window_mm": float(sum(day["precip_mm"] or 0 for day in window)),
         "weather_missing_days": sum(1 for day in window if day["precip_mm"] is None),
     }
+
+
+def extended_tree_card(tree, today=None):
+    """Card for logged-in users: the public card plus who watered and who cares for it.
+
+    This is the only place where volunteer names join tree data; the public card
+    (`public_tree_card`) must never gain these keys.
+    """
+    from .services import caretaker_of, watering_history
+
+    card = public_tree_card(tree, today=today)
+    caretaker = caretaker_of(tree)
+    card["waterings"] = [
+        {
+            "day": timezone.localtime(watering.watered_at).date(),
+            "by": watering.user.display_name,
+        }
+        for watering in watering_history(tree, limit=PUBLIC_HISTORY_LIMIT)
+    ]
+    card["caretaker"] = caretaker.display_name if caretaker else None
+    card["caretaker_id"] = str(caretaker.pk) if caretaker else None
+    return card

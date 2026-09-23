@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from accounts.models import User
 from trees.models import Assignment, Locality, Tree, Watering
+from trees.services import recompute_tree_status
 from weather.models import WeatherDaily
 
 SEED_NAMESPACE = uuid.UUID("7d3c2f1e-5b8a-4c6d-9e0f-1a2b3c4d5e6f")
@@ -165,6 +166,11 @@ class Command(BaseCommand):
             unique_fields=["locality", "day"],
             update_fields=["precip_mm", "source"],
         )
+
+        # Statuses in the table above come from the PoC; recompute them so the demo
+        # shows what the real algorithm says about the seeded history (spec §6.2).
+        for tree in Tree.objects.all():
+            recompute_tree_status(tree, today=today)
 
         self.stdout.write(
             self.style.SUCCESS(

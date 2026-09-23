@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load trees_tags %}
+{% block title %}Moje drzewa{% endblock %}
+
+{% block content %}
+<main class="page">
+  <h1>Moje drzewa</h1>
+
+  {% if trees %}
+    <p class="muted">Najpilniejsze na górze. Możesz oznaczyć podlanie prosto z listy.</p>
+    {% for item in trees %}
+      <div class="tree-item st-{{ item.tree.status }}">
+        <div class="info">
+          <a href="{% url 'trees:card' tree_id=item.tree.pk %}">{{ item.tree.species }}</a>
+          <div class="meta">
+            📍 {{ item.tree.locality.name }} ·
+            {% if item.last_watered %}podlane {{ item.last_watered }}{% else %}jeszcze nie podlewane{% endif %}
+          </div>
+          <div class="status-row-sm">{% status_badge item.tree.status %}</div>
+        </div>
+        <form method="post" action="{% url 'trees:water' tree_id=item.tree.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="from" value="list">
+          <button type="submit" class="btn btn-water">💧 Podlane</button>
+        </form>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="card empty-state">
+      <div class="art">🌱</div>
+      <h2>Nie opiekujesz się jeszcze żadnym drzewem</h2>
+      <p class="muted">Znajdź drzewo na mapie i zgłoś się do opieki — zajmie to chwilę.</p>
+      <a class="btn btn-primary" href="{% url 'trees:map' %}">Znajdź drzewo do opieki</a>
+    </div>
+  {% endif %}
+</main>
+{% endblock %}

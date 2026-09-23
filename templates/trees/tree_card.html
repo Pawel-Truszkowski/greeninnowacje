@@ -4,7 +4,9 @@
 
 {% block content %}
 <main class="page">
-  <p class="pill">👋 Widok publiczny — logowanie niepotrzebne</p>
+  {% if not user.is_authenticated %}
+    <p class="pill">👋 Widok publiczny — logowanie niepotrzebne</p>
+  {% endif %}
 
   {% if card.lifecycle == "archived" %}
     <p class="notice">To drzewo nie jest już aktywne. Historia pozostaje dostępna.</p>
@@ -15,6 +17,13 @@
     <div class="muted">📍 {{ card.locality.name }} · posadzono {{ card.planted_on|date:"j E Y" }}</div>
     <div class="status-row">{% status_badge card.status big=True %}</div>
     <p class="muted tight">{{ card.status_hint }}.{% if card.status != "OK" %} To drzewo czeka na Ciebie 💧{% endif %}</p>
+
+    {% if user.is_authenticated and card.lifecycle != "archived" %}
+      <form method="post" action="{% url 'trees:water' tree_id=card.id %}" class="water-form">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-water block">💧 Oznacz jako podlane</button>
+      </form>
+    {% endif %}
   </div>
 
   <div class="card photo-placeholder">
@@ -29,19 +38,50 @@
       <dt>Data zasadzenia</dt><dd>{{ card.planted_on|date:"j E Y" }}</dd>
       {% if card.planted_by %}<dt>Kto sadził</dt><dd>{{ card.planted_by }}</dd>{% endif %}
       <dt>Opiekun</dt>
-      <dd>{% if card.has_caretaker %}💚 Tak — drzewo ma opiekuna{% else %}🙋 Nie — możesz się zgłosić!{% endif %}</dd>
+      <dd>
+        {% if user.is_authenticated %}
+          {% if card.caretaker %}💚 {{ card.caretaker }}{% else %}🙋 Nikt — możesz się zgłosić!{% endif %}
+        {% elif card.has_caretaker %}💚 Tak — drzewo ma opiekuna{% else %}🙋 Nie — możesz się zgłosić!{% endif %}
+      </dd>
       {% if card.notes %}<dt>Notatki</dt><dd>{{ card.notes }}</dd>{% endif %}
     </dl>
   </div>
+
+  {% if user.is_authenticated and card.lifecycle != "archived" %}
+    <div class="card">
+      <h2>Opieka nad drzewem</h2>
+      {% if is_my_tree %}
+        <p class="muted tight">Opiekujesz się tym drzewem. Dostaniesz e-mail, gdy będzie pilnie potrzebowało wody.</p>
+        <form method="post" action="{% url 'trees:stop-care' tree_id=card.id %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-ghost">Zrezygnuj z opieki</button>
+        </form>
+      {% elif has_caretaker %}
+        <p class="muted tight">Tym drzewem opiekuje się już {{ card.caretaker }}. Nadal możesz je podlać!</p>
+      {% else %}
+        <p class="muted tight">To drzewo nie ma opiekuna. Zgłoś się — dostaniesz e-mail, gdy będzie potrzebowało wody.</p>
+        <form method="post" action="{% url 'trees:take-care' tree_id=card.id %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-secondary">Zostań opiekunem 💚</button>
+        </form>
+      {% endif %}
+    </div>
+  {% endif %}
 
   <div class="card">
     <h2>Historia podlewania</h2>
     {% if card.waterings %}
       <ul class="timeline">
-        {% for day in card.waterings %}
+        {% for watering in card.waterings %}
           <li><span class="dot">💧</span>
-            <span class="when">{{ day|date:"j E Y" }}</span>
-            <span class="who">podlane przez wolontariusza</span></li>
+            {% if user.is_authenticated %}
+              <span class="when">{{ watering.day|date:"j E Y" }}</span>
+              <span class="who">{{ watering.by }}</span>
+            {% else %}
+              <span class="when">{{ watering|date:"j E Y" }}</span>
+              <span class="who">podlane przez wolontariusza</span>
+            {% endif %}
+          </li>
         {% endfor %}
       </ul>
       {% if card.waterings_total > card.waterings|length %}

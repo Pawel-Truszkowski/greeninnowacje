@@ -26,6 +26,8 @@ ENDPOINTS = [
     ("post", "accounts:logout", {}, {"anonymous": 302, "volunteer": 302, "admin": 302}),
     ("post", "auth-api:api-logout", {}, {"anonymous": 204, "volunteer": 204, "admin": 204}),
     ("get", "trees-api:list", {}, {"anonymous": 200, "volunteer": 200, "admin": 200}),
+    ("get", "me-api:trees", {}, {"anonymous": 403, "volunteer": 200, "admin": 200}),
+    ("get", "trees:my", {}, {"anonymous": 302, "volunteer": 200, "admin": 200}),
 ]
 
 # Same, for endpoints that need an existing tree (kwargs built per test).
@@ -33,6 +35,15 @@ TREE_ENDPOINTS = [
     ("get", "trees:card", {"anonymous": 200, "volunteer": 200, "admin": 200}),
     ("get", "trees-api:public", {"anonymous": 200, "volunteer": 200, "admin": 200}),
     ("get", "trees-api:qr", {"anonymous": 200, "volunteer": 200, "admin": 200}),
+    ("get", "trees-api:detail", {"anonymous": 403, "volunteer": 200, "admin": 200}),
+    ("post", "trees-api:waterings", {"anonymous": 403, "volunteer": 201, "admin": 201}),
+    ("post", "trees-api:assign", {"anonymous": 403, "volunteer": 201, "admin": 201}),
+    # 400: nothing to release — the point is that anonymous users are stopped earlier.
+    ("post", "trees-api:unassign", {"anonymous": 403, "volunteer": 400, "admin": 400}),
+    # Pages redirect: anonymous to the login form, logged-in users back to the card.
+    ("post", "trees:water", {"anonymous": 302, "volunteer": 302, "admin": 302}),
+    ("post", "trees:take-care", {"anonymous": 302, "volunteer": 302, "admin": 302}),
+    ("post", "trees:stop-care", {"anonymous": 302, "volunteer": 302, "admin": 302}),
 ]
 
 

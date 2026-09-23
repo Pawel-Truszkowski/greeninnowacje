@@ -2,16 +2,36 @@
 
 import math
 
+from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import APIException, Throttled, ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT, HTTP_409_CONFLICT
+
+from accounts.permissions import IsVolunteer
+from core.ratelimit import rate_limit
 
 from .models import Tree
 from .qr import qr_png, tree_card_url
-from .selectors import map_tree_payload, map_trees, public_tree_card
+from .selectors import extended_tree_card, map_tree_payload, map_trees, public_tree_card
+from .services import (
+    CaretakerConflict,
+    assign_caretaker,
+    my_trees,
+    record_watering,
+    release_caretaker,
+)
+
+
+class Conflict(APIException):
+    """409 — the request clashes with current state (spec §4: assign to a taken tree)."""
+
+    status_code = HTTP_409_CONFLICT
+    default_detail = "Konflikt ze stanem drzewa."
+
 
 QR_CACHE_SECONDS = 86400
 BBOX_FORMAT_HINT = "Oczekiwany format: bbox=west,south,east,north (lng,lat,lng,lat)."
@@ -101,3 +121,58 @@ def tree_qr(request, tree_id):
         filename = f"drzewo-{tree.pk}.png"
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
+
+
+@api_view(["GET"])
+@permission_classes([IsVolunteer])
+def tree_extended_card(request, tree_id):
+    """Card for logged-in users: adds watering authors and the caretaker's name."""
+    tree = get_object_or_404(Tree.objects.select_related("locality"), pk=tree_id)
+    return Response(extended_tree_card(tree))
+
+
+@api_view(["POST"])
+@permission_classes([IsVolunteer])
+@rate_limit("watering", lambda: settings.WATERING_RATE_LIMIT, key="user")
+def tree_watering(request, tree_id):
+    """Mark a tree as watered. No body: the server owns the time and the author."""
+    if request.limited:
+        raise Throttled(detail="Za dużo zgłoszeń podlania. Spróbuj za chwilę.")
+    tree = get_object_or_404(Tree, pk=tree_id, lifecycle=Tree.Lifecycle.ACTIVE)
+    watering, status = record_watering(tree, request.user)
+    return Response(
+        {"watered_at": watering.watered_at, "status": status},
+        status=HTTP_201_CREATED,
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsVolunteer])
+def tree_assign(request, tree_id):
+    tree = get_object_or_404(Tree, pk=tree_id, lifecycle=Tree.Lifecycle.ACTIVE)
+    try:
+        assign_caretaker(tree, request.user)
+    except CaretakerConflict as conflict:
+        raise Conflict(str(conflict)) from conflict
+    return Response({"caretaker": request.user.display_name}, status=HTTP_201_CREATED)
+
+
+@api_view(["POST"])
+@permission_classes([IsVolunteer])
+def tree_unassign(request, tree_id):
+    tree = get_object_or_404(Tree, pk=tree_id)
+    if not release_caretaker(tree, request.user):
+        raise ValidationError({"detail": "Nie opiekujesz się tym drzewem."})
+    return Response(status=HTTP_204_NO_CONTENT)
+
+
+@api_view(["GET"])
+@permission_classes([IsVolunteer])
+def my_trees_list(request):
+    """Trees I look after, most urgent first (spec §4)."""
+    return Response(
+        [
+            map_tree_payload(tree) | {"locality": tree.locality.name}
+            for tree in my_trees(request.user)
+        ]
+    )

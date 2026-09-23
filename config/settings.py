@@ -156,6 +156,7 @@ if not DEBUG:
 # (1 behind Caddy). 0 = trust REMOTE_ADDR only; never trust client-supplied headers.
 TRUSTED_PROXY_HOPS = env.int("TRUSTED_PROXY_HOPS", default=0)
 AUTH_RATE_LIMIT = "10/15m"
+WATERING_RATE_LIMIT = "30/m"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
