@@ -58,7 +58,7 @@ Kluczowe decyzje przy mapowaniu §3 na Django:
 - [x] **25.09** — `GET /api/trees` (bbox/status/locality, tylko aktywne), strona mapy (Leaflet + klastry, filtry z PoC); `GET /api/trees/{id}/public` + test „brak danych osobowych”; `/drzewo/{uuid}` (widok publiczny); `qr.png`
 - [x] **28.09** — `status.py` + testy wszystkich przypadków brzegowych z §6.2; `POST …/waterings` (natychmiastowe przeliczenie, zwraca nowy status, toast „Dziękujemy!…”); karta rozszerzona; assign/unassign (409); `/moje-drzewa` (sortowanie wg §4)
 - [x] **29.09** — Rejestracja drzewa: GPS z korektą pinezki, klient Nominatim (User-Agent, throttle, mock w testach), dopasowanie lub utworzenie miejscowości, 409 duplikatu + `force`, ekran sukcesu z QR
-- [ ] **30.09** — Stabilizacja, ręczne E2E ścieżek z §9, README (uruchomienie jedną komendą), demo dla mentora
+- [x] **30.09** — Stabilizacja, ręczne E2E ścieżek z §9, README (uruchomienie jedną komendą) — demo dla mentora do umówienia
 
 **Poza M1 celowo:** pobieranie pogody z API (w M1 pogoda pochodzi z seeda), e-maile, panel admina aplikacji (w M1 wystarczy Django admin), statystyki i CSV, pełne utwardzenie produkcyjne.
 
