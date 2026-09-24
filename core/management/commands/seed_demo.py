@@ -15,7 +15,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from accounts.models import User
-from trees.models import Assignment, Locality, Tree, Watering
+from trees.models import Assignment, Locality, Tree, TreeSpecies, Watering
 from trees.services import recompute_tree_status
 from weather.models import WeatherDaily
 
@@ -131,6 +131,9 @@ class Command(BaseCommand):
         for (key, species, loc, lat, lng, acc, planted_ago, planted_by, notes, status,
              caretaker, waterings) in TREES:  # fmt: skip
             tree_id = seed_tree_id(key)
+            # Keep the catalogue in step with the demo data; the tree itself stores the
+            # name as text, so the return value is not needed here.
+            TreeSpecies.objects.get_or_create(name=species)
             if Tree.objects.filter(pk=tree_id).exists():
                 continue
             planted_at = now - timedelta(days=planted_ago)

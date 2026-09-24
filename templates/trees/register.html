@@ -8,6 +8,7 @@
 
 {% block content %}
 <main class="page narrow">
+  {% include "includes/logged_in_pill.html" %}
   <h1>Zarejestruj drzewo 🌳</h1>
   <p class="muted">Stań przy drzewie — pobierzemy lokalizację z telefonu. Pinezkę możesz przesunąć.</p>
 
@@ -31,6 +32,9 @@
     {{ form.lat }}{{ form.lng }}{{ form.gps_accuracy_m }}
 
     {% include "includes/field.html" with field=form.species %}
+    <div id="species-other" class="hidden">
+      {% include "includes/field.html" with field=form.species_other %}
+    </div>
     {% include "includes/field.html" with field=form.planted_on %}
     {% include "includes/field.html" with field=form.locality_name %}
     {% include "includes/field.html" with field=form.planted_by %}

@@ -68,4 +68,18 @@
     setPosition(event.latlng.lat, event.latlng.lng);
     statusEl.textContent = 'Pinezka ustawiona ręcznie.';
   });
+
+  /* The free-text species field only makes sense for the "Inny" choice. */
+  var speciesSelect = document.getElementById('id_species');
+  var otherBox = document.getElementById('species-other');
+  var OTHER = '__other__';
+
+  function toggleOther() {
+    otherBox.classList.toggle('hidden', speciesSelect.value !== OTHER);
+  }
+
+  speciesSelect.addEventListener('change', toggleOther);
+  // Also on load: after a validation error the browser restores the choice, but fires
+  // no change event — the field would stay hidden with "Inny" selected.
+  toggleOther();
 })();

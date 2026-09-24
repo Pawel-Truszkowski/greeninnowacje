@@ -24,7 +24,9 @@
       <a href="{{ my_url }}" {% if request.path == my_url %}class="active" aria-current="page"{% endif %}>Moje drzewa</a>
       <form method="post" action="{% url 'accounts:logout' %}">
         {% csrf_token %}
-        <button type="submit" class="link-button" title="Wyloguj ({{ user.display_name }})">Wyloguj</button>
+        <button type="submit" class="link-button" title="Zalogowano: {{ user.display_name }}">
+          Wyloguj ({{ user.display_name|truncatechars:14 }})
+        </button>
       </form>
     {% else %}
       {% url 'accounts:login' as login_url %}

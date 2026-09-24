@@ -117,6 +117,7 @@ a { color: var(--green-700); }
 
 .app-header nav {
   display: flex;
+  align-items: center;
   gap: 6px;
   flex-wrap: wrap;
 }
@@ -694,6 +695,7 @@ input[aria-invalid="true"] { border-color: var(--urgent); }
   align-items: center;
 }
 .app-header nav .link-button:hover { background: rgba(255,255,255,.12); }
+.app-header nav .link-button { white-space: nowrap; }
 
 /* ---------- tree card + map: classes replacing the PoC's inline styles ---------- */
 
@@ -772,3 +774,5 @@ input[aria-invalid="true"] { border-color: var(--urgent); }
 .tree-pin.mine {
   box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--green-800);
 }
+
+.hidden { display: none; }

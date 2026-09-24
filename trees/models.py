@@ -28,6 +28,31 @@ class Locality(models.Model):
         return self.name
 
 
+class TreeSpecies(models.Model):
+    """Catalogue behind the species dropdown in the registration form.
+
+    `Tree.species` stays a text column (spec §3) — the catalogue curates what volunteers
+    can pick, without rewriting history or blocking an unusual planting ("Inny" option).
+    Retired species keep `is_active=False` instead of being deleted.
+    """
+
+    name = models.CharField("nazwa", max_length=120)
+    is_active = models.BooleanField("aktywny", default=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        db_table = "tree_species"
+        verbose_name = "gatunek drzewa"
+        verbose_name_plural = "gatunki drzew"
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(Lower("name"), name="tree_species_name_ci_unique"),
+        ]
+
+    def __str__(self):
+        return self.name
+
+
 class Tree(models.Model):
     class Status(models.TextChoices):
         OK = "OK", "Podlane"

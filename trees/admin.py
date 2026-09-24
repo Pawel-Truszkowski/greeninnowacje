@@ -1,11 +1,18 @@
 from django.contrib import admin
 
-from .models import Assignment, Locality, Tree, Watering
+from .models import Assignment, Locality, Tree, TreeSpecies, Watering
 
 
 @admin.register(Locality)
 class LocalityAdmin(admin.ModelAdmin):
     list_display = ["name", "lat", "lng", "created_at"]
+    search_fields = ["name"]
+
+
+@admin.register(TreeSpecies)
+class TreeSpeciesAdmin(admin.ModelAdmin):
+    list_display = ["name", "is_active", "created_at"]
+    list_filter = ["is_active"]
     search_fields = ["name"]
 
 

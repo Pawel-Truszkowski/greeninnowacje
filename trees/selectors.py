@@ -13,7 +13,7 @@ from django.utils import timezone
 from core.models import load_drought_config
 from weather.models import WeatherDaily
 
-from .models import Assignment, Tree, Watering
+from .models import Assignment, Tree, TreeSpecies, Watering
 from .status_display import STATUS_DISPLAY
 
 WEATHER_CHART_DAYS = 14
@@ -136,3 +136,12 @@ def extended_tree_card(tree, today=None):
     card["caretaker"] = caretaker.display_name if caretaker else None
     card["caretaker_id"] = str(caretaker.pk) if caretaker else None
     return card
+
+
+def active_species_names():
+    """Names offered in the registration dropdown: catalogue entries still in use.
+
+    Sorted alphabetically by the model's `ordering`; retired species stay in the database
+    (trees keep their names) but disappear from the choices.
+    """
+    return list(TreeSpecies.objects.filter(is_active=True).values_list("name", flat=True))
