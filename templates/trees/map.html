@@ -33,6 +33,10 @@
     </div>
   </div>
 
+  {% if user.is_authenticated %}
+    <a class="btn btn-primary map-fab" href="{% url 'trees:register' %}">🌳 Zarejestruj drzewo tutaj</a>
+  {% endif %}
+
   <p class="map-error" id="map-error" hidden>Nie udało się pobrać drzew. Sprawdź połączenie i odśwież stronę.</p>
 </div>
 {% endblock %}

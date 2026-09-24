@@ -7,7 +7,7 @@ Both the HTML card and GET /api/trees/{id}/public render its output.
 
 from datetime import timedelta
 
-from django.db.models import Exists, Max, OuterRef
+from django.db.models import BooleanField, Exists, Max, OuterRef, Value
 from django.utils import timezone
 
 from core.models import load_drought_config
@@ -24,7 +24,7 @@ def _active_assignment(tree_ref=None):
     return Assignment.objects.filter(tree=tree_ref or OuterRef("pk"), ended_at__isnull=True)
 
 
-def map_trees(*, status=None, locality_id=None, bbox=None):
+def map_trees(*, status=None, locality_id=None, bbox=None, user=None):
     """Active trees for the map, with the two extras the popup needs."""
     trees = (
         Tree.objects.filter(lifecycle=Tree.Lifecycle.ACTIVE)
@@ -34,6 +34,11 @@ def map_trees(*, status=None, locality_id=None, bbox=None):
         )
         .order_by("planted_on")
     )
+    if user:
+        trees = trees.annotate(is_mine=Exists(_active_assignment().filter(user=user)))
+    else:
+        trees = trees.annotate(is_mine=Value(False, output_field=BooleanField()))
+
     if status:
         trees = trees.filter(status=status)
     if locality_id:
@@ -55,6 +60,7 @@ def map_tree_payload(tree):
         "locality_id": tree.locality_id,
         "last_watered_on": timezone.localtime(last_watered_at).date() if last_watered_at else None,
         "has_caretaker": tree.has_caretaker,
+        "is_mine": bool(getattr(tree, "is_mine", False)),
     }
 
 

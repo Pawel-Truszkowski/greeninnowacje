@@ -44,6 +44,7 @@ class TestTreeList:
             "locality_id": tree.locality_id,
             "last_watered_on": (timezone.localdate() - timedelta(days=2)).isoformat(),
             "has_caretaker": True,
+            "is_mine": False,  # anonymous request
         }
 
     def test_tree_without_history(self, client):

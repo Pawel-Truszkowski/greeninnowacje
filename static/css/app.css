@@ -767,3 +767,8 @@ input[aria-invalid="true"] { border-color: var(--urgent); }
 .gps-status { margin: 0 0 12px; }
 .duplicate-warning { border: 2px solid var(--soon); }
 .duplicate-warning h2 { margin-top: 0; color: var(--soon); }
+
+/* Trees the logged-in volunteer looks after (UI doc §8.2). */
+.tree-pin.mine {
+  box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--green-800);
+}

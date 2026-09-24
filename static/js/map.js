@@ -36,9 +36,10 @@
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="#fff">' +
     '<path d="M12 2C8 8 5 11.5 5 15a7 7 0 0 0 14 0c0-3.5-3-7-7-13z"/></svg>';
 
-  function pinIcon(status) {
+  function pinIcon(status, isMine) {
     return L.divIcon({
-      html: '<div class="tree-pin pin-' + status + '">' + DROP_SVG + '</div>',
+      html:
+        '<div class="tree-pin pin-' + status + (isMine ? ' mine' : '') + '">' + DROP_SVG + '</div>',
       className: '',
       iconSize: [34, 34],
       iconAnchor: [17, 30],
@@ -64,10 +65,18 @@
     badge.className = 'status-badge status-' + tree.status;
     badge.textContent = (config.statuses[tree.status] || {}).label || tree.status;
 
+    var care;
+    if (tree.is_mine) {
+      care = ' · 💚 Twoje drzewo';
+    } else if (tree.has_caretaker) {
+      care = ' · ma opiekuna 💚';
+    } else {
+      care = ' · szuka opiekuna!';
+    }
+
     var meta = document.createElement('p');
     meta.className = 'muted popup-meta';
-    meta.textContent =
-      lastWateringText(tree) + (tree.has_caretaker ? ' · ma opiekuna 💚' : ' · szuka opiekuna!');
+    meta.textContent = lastWateringText(tree) + care;
 
     var link = document.createElement('a');
     link.className = 'btn btn-primary popup-link';
@@ -96,7 +105,9 @@
         errorEl.hidden = true;
         cluster.clearLayers();
         trees.forEach(function (tree) {
-          var marker = L.marker([tree.lat, tree.lng], { icon: pinIcon(tree.status) });
+          var marker = L.marker([tree.lat, tree.lng], {
+            icon: pinIcon(tree.status, tree.is_mine),
+          });
           marker.bindPopup(popupContent(tree), { minWidth: 220 });
           cluster.addLayer(marker);
         });

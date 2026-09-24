@@ -12,6 +12,14 @@ Green Innowacje — a tree-watering monitoring app (volunteers water newly plant
   - `spec/Dokument_UI_…md` — screens, status system, accessibility, microcopy. PDFs 1A2/1A5/1A7 describe Etap 2 features, not MVP.
   - `poc/` — static clickable mockup (open `poc/index.html`); source of the visual design (`poc/assets/styles.css`) to port into Django templates.
 
+## How we work (since 2026-09-23)
+
+1. **Plan first.** One small feature per cycle: enter plan mode, present the plan (goal, files, contract, acceptance criteria, tests), wait for approval.
+2. **Paweł writes the implementation**; Claude reviews it — correctness, spec conformance, security — explains every finding and applies only the fixes he accepts.
+3. Claude may write tests, scaffolding and fixes on request, and always explains what changed and why.
+
+Roadmap progress is tracked with checkboxes in `docs/ROADMAP.md`.
+
 ## Commands
 
 ```bash

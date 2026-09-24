@@ -108,6 +108,7 @@ def tree_list(request):
         status=parse_status(params["status"]) if params.get("status") else None,
         locality_id=parse_locality(params["locality"]) if params.get("locality") else None,
         bbox=parse_bbox(params["bbox"]) if params.get("bbox") else None,
+        user=request.user if request.user.is_authenticated else None,
     )
     return Response([map_tree_payload(tree) for tree in trees])
 
