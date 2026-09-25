@@ -6,6 +6,8 @@ forgotten in one entry point and remembered in another.
 """
 
 import logging
+from collections import Counter
+from dataclasses import dataclass
 
 from django.db import IntegrityError, transaction
 from django.db.models import BooleanField, Case, F, IntegerField, Max, Value, When
@@ -26,17 +28,41 @@ class CaretakerConflict(Exception):
     """Somebody else is already looking after this tree."""
 
 
-def _status_inputs(tree, today, config):
+def _rainfall_window(locality_id, today, config):
     window = weather_series(
-        tree.locality_id, days=config.rain_window_days, end_day=last_finished_day(today)
+        locality_id, days=config.rain_window_days, end_day=last_finished_day(today)
     )
-    last_watered_at = tree.waterings.aggregate(last=Max("watered_at"))["last"]
+    return [(day["day"], day["precip_mm"]) for day in window]
+
+
+def _warn_about_gaps(locality_id, rainfall, config):
+    """One warning per locality: the gap is in the weather, not in the tree."""
+    missing = missing_rain_days(rainfall)
+    if missing:
+        # Treated as 0 mm, but a gap means the status may be based on partial data.
+        logger.warning(
+            "Niepełne dane pogodowe dla miejscowości %s: brakuje %d z %d dni (%s)",
+            locality_id,
+            len(missing),
+            config.rain_window_days,
+            ", ".join(day.isoformat() for day in missing),
+        )
+
+
+def _build_inputs(tree, today, rainfall, last_watered_at):
     return StatusInputs(
         today=today,
         planted_on=tree.planted_on,
         created_on=timezone.localtime(tree.created_at).date(),
         last_watered_on=timezone.localtime(last_watered_at).date() if last_watered_at else None,
-        rainfall=[(day["day"], day["precip_mm"]) for day in window],
+        rainfall=rainfall,
+    )
+
+
+def _status_inputs(tree, today, config):
+    last_watered_at = tree.waterings.aggregate(last=Max("watered_at"))["last"]
+    return _build_inputs(
+        tree, today, _rainfall_window(tree.locality_id, today, config), last_watered_at
     )
 
 
@@ -45,17 +71,7 @@ def recompute_tree_status(tree, today=None, save=True):
     today = today or timezone.localdate()
     config = load_drought_config()
     inputs = _status_inputs(tree, today, config)
-
-    missing = missing_rain_days(inputs.rainfall)
-    if missing:
-        # Treated as 0 mm, but a gap means the status may be based on partial data.
-        logger.warning(
-            "Niepełne dane pogodowe dla miejscowości %s: brakuje %d z %d dni (%s)",
-            tree.locality_id,
-            len(missing),
-            config.rain_window_days,
-            ", ".join(day.isoformat() for day in missing),
-        )
+    _warn_about_gaps(tree.locality_id, inputs.rainfall, config)
 
     status = compute_status(inputs, config)
     if save and status != tree.status:
@@ -225,3 +241,50 @@ def register_tree(user, *, locality_name=None, force=False, **fields):
     tree = Tree.objects.create(created_by=user, locality=locality, **fields)
     recompute_tree_status(tree)
     return tree
+
+
+@dataclass(frozen=True)
+class RecomputeResult:
+    checked: int
+    changed: int
+    counts: dict[str, int]
+
+
+def recompute_all(*, today=None, locality_id=None, save=True) -> RecomputeResult:
+    """Recompute every active tree (spec §6, the 07:00 job and the admin's "recompute now").
+
+    Reads in bulk on purpose: the config once, the weather once per locality and the last
+    watering as an annotation. Done tree by tree this would be three queries each — fine
+    for one watering, wasteful for a whole database.
+    """
+    today = today or timezone.localdate()
+    config = load_drought_config()
+
+    trees = Tree.objects.filter(lifecycle=Tree.Lifecycle.ACTIVE).annotate(
+        last_watered_at=Max("waterings__watered_at")
+    )
+    if locality_id:
+        trees = trees.filter(locality_id=locality_id)
+    trees = list(trees)
+
+    windows = {}
+    for tree_locality_id in {tree.locality_id for tree in trees}:
+        rainfall = _rainfall_window(tree_locality_id, today, config)
+        _warn_about_gaps(tree_locality_id, rainfall, config)
+        windows[tree_locality_id] = rainfall
+
+    counts = Counter()
+    changed = []
+    for tree in trees:
+        status = compute_status(
+            _build_inputs(tree, today, windows[tree.locality_id], tree.last_watered_at), config
+        )
+        counts[status] += 1
+        if status != tree.status:
+            tree.status = status
+            changed.append(tree)
+
+    if save and changed:
+        Tree.objects.bulk_update(changed, ["status"])
+
+    return RecomputeResult(checked=len(trees), changed=len(changed), counts=dict(counts))
