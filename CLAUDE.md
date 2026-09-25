@@ -33,6 +33,8 @@ uv run ruff check . && uv run ruff format .
 uv run python manage.py makemigrations --check --dry-run   # CI fails on missing migrations
 ```
 
+Scheduled jobs live in `deploy/crontab`, run by a `supercronic` container (`cron` service, same image as the app, `TZ` from the environment). `core/tests/test_crontab.py` ties the schedule to the code — a renamed management command fails the suite instead of failing silently every morning.
+
 Dependencies live in `pyproject.toml` / `uv.lock` (no requirements.txt). CI: `.github/workflows/ci.yml` (ruff, migration check, pytest on Postgres).
 
 ## Architecture

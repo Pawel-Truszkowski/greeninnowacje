@@ -35,5 +35,25 @@ services:
       db:
         condition: service_healthy
 
+  # Scheduled jobs (spec §6): same image as the app, different command. Separate service
+  # so its logs stay separate, a restart does not interrupt traffic, and scaling the app
+  # would not multiply the jobs.
+  cron:
+    build:
+      context: .
+      args:
+        UV_SYNC_ARGS: ""
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-greeninnowacje}:${POSTGRES_PASSWORD:-greeninnowacje}@db:5432/${POSTGRES_DB:-greeninnowacje}
+      TZ: ${TZ:-Europe/Warsaw}
+    command: supercronic /app/deploy/crontab
+    volumes:
+      - .:/app
+      - /app/.venv
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   pgdata:

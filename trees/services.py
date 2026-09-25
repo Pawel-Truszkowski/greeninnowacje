@@ -14,6 +14,7 @@ from django.db.models import BooleanField, Case, F, IntegerField, Max, Value, Wh
 from django.utils import timezone
 
 from core.models import load_drought_config
+from weather.services import backfill_locality
 
 from .geo import DUPLICATE_RADIUS_M, bbox_around, haversine_m
 from .models import Assignment, Locality, Tree, Watering
@@ -225,7 +226,12 @@ def resolve_locality(lat, lng, name=None):
     existing = Locality.objects.filter(name__iexact=name).first()
     if existing:
         return existing
-    return Locality.objects.create(name=name, lat=lat, lng=lng)
+
+    locality = Locality.objects.create(name=name, lat=lat, lng=lng)
+    # After the commit, not inside it: an HTTP call would otherwise hold the transaction
+    # open, and a tree must stay registered even if the weather service is down.
+    transaction.on_commit(lambda: backfill_locality(locality))
+    return locality
 
 
 @transaction.atomic

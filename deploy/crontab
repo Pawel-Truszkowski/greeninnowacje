@@ -1,0 +1,8 @@
+# Scheduled jobs (spec §6). Times are local — the container runs with TZ=Europe/Warsaw.
+# Logs go to stdout: docker compose logs -f cron
+#
+# Migrations are deliberately absent: the app service runs them at startup, and an
+# unattended job must never change the schema.
+
+0 5 * * * python manage.py fetch_weather
+0 7 * * * python manage.py recompute_statuses

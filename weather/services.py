@@ -10,7 +10,10 @@ from dataclasses import dataclass
 
 from django.utils import timezone
 
+from core.models import load_drought_config
+
 from .models import WeatherDaily
+from .open_meteo import WeatherUnavailable, fetch_daily
 
 logger = logging.getLogger(__name__)
 
@@ -64,3 +67,27 @@ def store_readings(locality, readings, *, today=None) -> StoreResult:
             locality,
         )
     return StoreResult(stored=len(storable), skipped=skipped)
+
+
+def backfill_locality(locality, days=None) -> StoreResult:
+    """Fetch the drought window for a locality we have just learned about (spec §5.1).
+
+    Called right after a volunteer registers the first tree somewhere new, so it fails
+    fast and never raises: their registration has already been saved, and an outage at
+    Open-Meteo must not turn into an error on their screen. The daily job will fill in
+    whatever is missing tomorrow morning.
+    """
+    days = days or load_drought_config().rain_window_days
+    try:
+        readings = fetch_daily(
+            locality.lat, locality.lng, past_days=days, forecast_days=0, retry_delays=(0,)
+        )
+    except WeatherUnavailable as error:
+        logger.warning(
+            "Nie udało się pobrać historii pogody dla nowej miejscowości %s: %s", locality, error
+        )
+        return StoreResult(stored=0, skipped=0)
+
+    result = store_readings(locality, readings)
+    logger.info("Uzupełniono historię pogody dla %s: %d dni", locality, result.stored)
+    return result

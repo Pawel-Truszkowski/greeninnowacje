@@ -35,6 +35,25 @@ Daty liczone są względem dnia uruchomienia, więc demo zawsze wygląda aktualn
 6. **Rejestracja drzewa** (`/rejestracja-drzewa`) — lokalizacja z GPS z korektą pinezki,
    wykrywanie duplikatu bliżej niż 2 m, kod QR na karcie nowego drzewa.
 
+## Zadania cykliczne
+
+Kontener `cron` (ten sam obraz co aplikacja, uruchamiany przez `supercronic`) wykonuje
+harmonogram z [`deploy/crontab`](deploy/crontab) w czasie polskim:
+
+| Godzina | Zadanie |
+|---|---|
+| 05:00 | `fetch_weather` — opady z Open-Meteo dla każdej miejscowości |
+| 07:00 | `recompute_statuses` — statusy suszy dla aktywnych drzew |
+
+```bash
+docker compose logs -f cron                                   # podgląd przebiegów
+docker compose exec app python manage.py fetch_weather --days 5   # ręczne uruchomienie
+docker compose exec app python manage.py recompute_statuses --dry-run   # bez zapisu
+```
+
+Godzinami steruje zmienna `TZ`. Zadania celowo nie wykonują migracji — robi to usługa
+`app` przy starcie.
+
 ## Praca bez Dockera
 
 Baza nadal z Compose (port 5433 na hoście), reszta przez uv:

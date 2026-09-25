@@ -24,11 +24,17 @@ class WeatherUnavailable(Exception):
     """Raised when the weather service is unreachable or returns an error."""
 
 
-def fetch_daily(lat, lng, *, past_days=1, forecast_days=1) -> list[DailyReading]:
+def fetch_daily(
+    lat, lng, *, past_days=1, forecast_days=1, retry_delays=RETRY_DELAYS
+) -> list[DailyReading]:
     """Fetch daily weather readings (rainfall and max temperature) for the given coordinates.
 
     Returns a list of DailyReading objects, sorted by day ascending. The list includes
     past readings (up to `past_days`) and future forecasts (up to `forecast_days`).
+
+    `retry_delays` sets how many attempts are made and how long to wait between them.
+    Callers that keep a person waiting (the registration form) pass (0,) for a single
+    fail-fast attempt; the cron job keeps the patient default.
     """
     params = {
         "latitude": str(lat),
@@ -40,7 +46,7 @@ def fetch_daily(lat, lng, *, past_days=1, forecast_days=1) -> list[DailyReading]
     }
 
     last_error = None
-    for attempt, delay in enumerate(RETRY_DELAYS):
+    for attempt, delay in enumerate(retry_delays):
         try:
             response = httpx.get(settings.OPEN_METEO_URL, params=params, timeout=TIMEOUT_S)
             response.raise_for_status()
@@ -57,7 +63,7 @@ def fetch_daily(lat, lng, *, past_days=1, forecast_days=1) -> list[DailyReading]
 
         # Reached only after a handled error — a successful attempt leaves via break.
         logger.warning("Open-Meteo request failed: %s", last_error)
-        if attempt < len(RETRY_DELAYS) - 1:
+        if attempt < len(retry_delays) - 1:
             time.sleep(delay)
     else:
         raise WeatherUnavailable("Open-Meteo is unreachable after retries") from last_error
