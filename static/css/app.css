@@ -750,9 +750,6 @@ input[aria-invalid="true"] { border-color: var(--urgent); }
   font-size: 9px;
   font-weight: 700;
   fill: var(--ink-soft);
-  transform: rotate(-45deg);
-  transform-box: fill-box;
-  transform-origin: right top;
 }
 
 .qr-box .qr-frame { background: #fff; }

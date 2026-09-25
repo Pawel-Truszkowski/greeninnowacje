@@ -27,6 +27,9 @@ def weather_chart(series):
                 "y": chart_height - max(height, 2),
                 "height": max(height, 2),
                 "width": bar_width,
+                # The rotation centre goes into the SVG transform attribute, so the
+                # label position must be known here rather than left to CSS.
+                "label_x": index * (bar_width + gap) + bar_width,
                 "label": day["day"],
                 "value": value,
                 "missing": missing,
