@@ -120,7 +120,11 @@ edytowalne z panelu administratora.
 
 ## Stan prac
 
-Etap M1 (pionowy przekrój aplikacji) zamknięty: konta i uprawnienia, mapa publiczna, karta
-drzewa z kodem QR, podlewanie, opieka nad drzewem i rejestracja drzew w terenie. 283 testy.
-Kolejne etapy — integracja z Open-Meteo i zadania cykliczne, powiadomienia e-mail, panel
-administratora, eksport CSV i wdrożenie produkcyjne — opisuje [`docs/ROADMAP.md`](docs/ROADMAP.md).
+| Etap | Zakres | Stan |
+|---|---|---|
+| M1 | Konta, mapa publiczna, karta drzewa z QR, podlewanie, opieka, rejestracja w terenie | ✅ 30.09 |
+| M2 | Open-Meteo, zadania cykliczne (05:00 i 07:00), panel administratora | ✅ 25.09 |
+| M3 | Powiadomienia e-mail, eksport CSV | w toku |
+| M4 | Utwardzenie produkcyjne, backup, wdrożenie na VPS | |
+
+463 testy. Szczegóły i otwarte kwestie: [`docs/ROADMAP.md`](docs/ROADMAP.md).

@@ -62,26 +62,38 @@ Kluczowe decyzje przy mapowaniu §3 na Django:
 
 **Poza M1 celowo:** pobieranie pogody z API (w M1 pogoda pochodzi z seeda), e-maile, panel admina aplikacji (w M1 wystarczy Django admin), statystyki i CSV, pełne utwardzenie produkcyjne.
 
-## M2 — Pogoda i panel admina (~1–7.10)
-- [ ] `weather/open_meteo.py`: zapytanie z §5.1, timeout 10 s, 3 ponowienia z backoff; brak danych nie jest traktowany jako 0 mm, tylko logowany jako niekompletność. Backfill ostatnich `RAIN_WINDOW_DAYS` dni przy tworzeniu nowej miejscowości.
-- [ ] Komendy `fetch_weather`, `recompute_statuses` (idempotentne, uruchamiane z CLI) i kontener `supercronic` z harmonogramem z §6 (Europe/Warsaw).
-- [ ] Panel `/admin/*`: użytkownicy (rola, is_active), edycja i archiwizacja drzewa, config z walidacją (liczby dodatnie, SOON < URGENT) + przycisk „Przelicz statusy teraz”.
-- **Wynik:** status zmienia się na podstawie prawdziwej pogody.
+## M2 — Pogoda i panel admina ✅ (25.09)
+- [x] `weather/open_meteo.py`: zapytanie z §5.1, timeout 10 s, 3 próby z narastającą przerwą; 4xx bez ponawiania; brak odczytu zostaje `None`, nigdy 0 mm
+- [x] `weather/services.py`: zapis z UPSERT po `(locality, day)`; tylko dni zakończone (dzisiejszy opad to jeszcze prognoza)
+- [x] Komendy `fetch_weather` i `recompute_statuses` — idempotentne, z podsumowaniem na `stdout`, `--days`, `--locality`, `--dry-run`
+- [x] Okno pogodowe kończy się **wczoraj**, więc ostrzeżenie o niepełnych danych znów oznacza realną lukę
+- [x] Harmonogram: kontener `supercronic` z `deploy/crontab` (05:00 i 07:00, Europe/Warsaw), test wiążący wpisy z komendami Django
+- [x] Backfill przy nowej miejscowości — po commicie transakcji, awaria API nie psuje rejestracji drzewa
+- [x] Panel `/admin/*`: statystyki, drzewa (edycja, archiwizacja), użytkownicy (rola, aktywność, blokada na własnym koncie), progi suszy + „Przelicz statusy teraz”
+- **Wynik osiągnięty:** statusy wynikają z prawdziwych opadów (15–21 mm w oknie przy progu 10 mm), a administrator zarządza bez zaglądania do bazy.
 
-## M3 — Powiadomienia, statystyki, eksport (~8–14.10)
-- [ ] SMTP z env (zgodny z Brevo). Dwa szablony PL (tekst + prosty HTML) z §5.3; limit 1 e-mail na użytkownika dziennie; `EmailLog`; komenda `send_digests` (07:30).
-- [ ] `GET /api/admin/stats` i ekran statystyk (liczniki z §4).
-- [ ] Eksport CSV (drzewa, podlania, pogoda) w UTF-8 z BOM, sprawdzony w Excelu.
-- **Wynik:** e-maile przychodzą, admin ma dashboard i eksporty.
+### Poza planem, po uwagach z przeglądu
+- [x] Katalog gatunków (`TreeSpecies`) + lista wyboru w rejestracji z opcją „Inny”
+- [x] Informacja o zalogowaniu (przycisk wylogowania z imieniem, pasek „Zalogowano”)
+- [x] Wyróżnienie „moich” drzew na mapie i przycisk rejestracji
+- [x] Zgodność panelu z makietą PoC (ikony, kolory, kolumna „bez opiekuna”, dwie listy)
+- [x] Menu ☰ na telefonie (bez JavaScriptu) i mapa bez zależności od wysokości nagłówka
 
-## M4 — Utwardzenie produkcyjne i wdrożenie (~15–23.10)
+## M3 — Powiadomienia i eksport (~26.09–2.10)
+- [ ] SMTP z env (zgodny z Brevo); dwa szablony PL z §5.3 (do wolontariusza o jego pilnych drzewach, zbiorczy dla administratorów)
+- [ ] Limit 1 e-mail na użytkownika dziennie, oparty o `EmailLog`; komenda `send_digests` (07:30) jako trzeci wpis w harmonogramie
+- [x] ~~`GET /api/admin/stats` i ekran statystyk~~ — zrobione w M2 razem z panelem
+- [ ] Eksport CSV (drzewa, podlania, pogoda) w UTF-8 z BOM, sprawdzony w Excelu
+- **Wynik:** wolontariusz dostaje e-mail o suchych drzewach, administrator ma dane do raportu dla grantodawcy.
+
+## M4 — Utwardzenie produkcyjne i wdrożenie (~3–10.10)
 - [ ] Przejście przez checklistę z §7: HTTPS + HSTS, CSP (tylko domena kafelków), `X-Content-Type-Options`, `Referrer-Policy`, walidacja współrzędnych (granice Polski) i długości pól, rate limit na podlanie, bezpieczne cookies, `check --deploy` bez ostrzeżeń.
 - [ ] Caddy w Compose; `pg_dump` o 03:00 + kopia poza serwer (rclone) + **sprawdzone przywracanie**.
 - [ ] Dokumentacja: README, `.env.example` z opisem wszystkich zmiennych, instrukcja deployu na VPS, instrukcja administratora (PL).
 - [ ] Pełny zestaw testów z §9, E2E na produkcji, przekazanie kont (MapTiler, SMTP) organizacji.
 - **Wynik:** DoD spełnione, aplikacja działa na produkcji.
 
-## Bufor (~24–31.10)
+## Bufor (po M4)
 Kalibracja progów suszy na prawdziwych danych, poprawki po pierwszych testach z wolontariuszami.
 
 ## Etap 2 (po MVP, do decyzji klienta)
@@ -89,12 +101,15 @@ Rola koordynatora; powiadomienia w aplikacji i Web Push; tryb offline (PWA + syn
 
 ---
 
+## Tempo
+M1 zamknięty 30.09 (plan: 30.09), M2 zamknięty 25.09 (plan: 1–7.10) — jesteśmy przed harmonogramem. Testów: 463.
+
 ## Otwarte kwestie (do mentora lub klienta)
-1. **Frontend:** potwierdzić szablony Django vs SPA. Do 24.09 dotyczy to tylko backendu, więc nic nie blokuje.
-2. **Hosting, domena, repozytorium** (repo mentora `pio3m/greeninnowacje` czy nowe?). Blokuje wdrożenie na serwer testowy w M1 i produkcję w M4.
+1. **Frontend:** szablony Django sprawdzają się w praktyce (mapa, panel, widok mobilny). Warto to formalnie potwierdzić z mentorem i zamknąć temat.
+2. **Hosting, domena, repozytorium** (repo mentora `pio3m/greeninnowacje` czy nowe?). Nadal nieustalone — **blokuje M4**, czyli wdrożenie produkcyjne, TLS i backupy. To dziś kwestia najpilniejsza.
 3. **Brakuje „Dokumentu Architektonicznego v0.2”:** specyfikacja odwołuje się do niego (progi, sekcja 12 = Definition of Done), a lokalnie mamy tylko v0.1 (11 sekcji). Poszukać na Google Drive mentora.
 4. **Prywatność (RODO):** według PDF-ów drzewa rosną w prywatnych ogrodach, a publiczna mapa pokazuje dokładne współrzędne. Czy w MVP mapa ma być publiczna z pełną dokładnością?
-5. Konta MapTiler i SMTP (Brevo) zakładane na organizację. Na czas developmentu kafelki OSM.
+5. **MapTiler**: klucz deweloperski działa (Paweł, 24.09); konto produkcyjne ma być założone na organizację. **SMTP (Brevo)** — potrzebne na start M3, też na organizację.
 6. Nazwa marki w UI: „Green Innowacje” (spec, PoC) czy „Greenowacje – Drzewo dla Pokoleń” (PDF-y)?
 
 
