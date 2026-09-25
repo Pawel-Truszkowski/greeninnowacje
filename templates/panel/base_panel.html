@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Panel administratora{% endblock %}
+
+{% block content %}
+<main class="page wide">
+  <h1>Panel administratora 🛠️</h1>
+  {% include "includes/logged_in_pill.html" %}
+
+  <nav class="chips panel-tabs">
+    <a class="chip {% if tab == 'stats' %}active{% endif %}" href="{% url 'panel:dashboard' %}">📊 Statystyki</a>
+    <a class="chip {% if tab == 'trees' %}active{% endif %}" href="{% url 'panel:trees' %}">🌳 Drzewa</a>
+    <a class="chip {% if tab == 'users' %}active{% endif %}" href="{% url 'panel:users' %}">👥 Użytkownicy</a>
+    <a class="chip {% if tab == 'config' %}active{% endif %}" href="{% url 'panel:thresholds' %}">💧 Progi suszy</a>
+  </nav>
+
+  {% block panel %}{% endblock %}
+</main>
+{% endblock %}

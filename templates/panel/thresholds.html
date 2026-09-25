@@ -1,0 +1,22 @@
+{% extends "panel/base_panel.html" %}
+{% block panel %}
+<form class="card" method="post">
+  {% csrf_token %}
+  <h2>Progi wykrywania suszy</h2>
+  <p class="muted tight">Te wartości decydują, kiedy wolontariusz zobaczy „pilnie podlać”.</p>
+  {% include "includes/form_errors.html" %}
+  {% include "includes/field.html" with field=form.RAIN_WINDOW_DAYS %}
+  {% include "includes/field.html" with field=form.RAIN_THRESHOLD_MM %}
+  {% include "includes/field.html" with field=form.DAYS_SOON %}
+  {% include "includes/field.html" with field=form.DAYS_URGENT %}
+  <button type="submit" class="btn btn-primary">Zapisz progi</button>
+</form>
+
+<form class="card" method="post" action="{% url 'panel:recompute' %}">
+  {% csrf_token %}
+  <h2>Przelicz statusy teraz</h2>
+  <p class="muted tight">Nowe progi obowiązują od najbliższego przeliczenia (codziennie o 07:00).
+    Możesz je zastosować od razu.</p>
+  <button type="submit" class="btn btn-secondary">Przelicz statusy teraz</button>
+</form>
+{% endblock %}

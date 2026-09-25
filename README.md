@@ -35,6 +35,19 @@ Daty liczone są względem dnia uruchomienia, więc demo zawsze wygląda aktualn
 6. **Rejestracja drzewa** (`/rejestracja-drzewa`) — lokalizacja z GPS z korektą pinezki,
    wykrywanie duplikatu bliżej niż 2 m, kod QR na karcie nowego drzewa.
 
+## Panel administratora
+
+Pod `/admin/` (konto z rolą administratora — w danych demo `admin@przyklad.pl`):
+
+| Zakładka | Zawartość |
+|---|---|
+| Statystyki | drzewa per status i miejscowość, podlania z 7 i 30 dni, aktywni wolontariusze, drzewa bez opiekuna |
+| Drzewa | filtry, edycja danych, archiwizacja i przywracanie (drzew nie usuwamy) |
+| Użytkownicy | rola i aktywność konta; własnego konta nie można zdegradować ani wyłączyć |
+| Progi suszy | wartości z tabeli `config` + przycisk „Przelicz statusy teraz” |
+
+Techniczny Django admin (dla programisty) żyje osobno, pod `DJANGO_ADMIN_URL`.
+
 ## Zadania cykliczne
 
 Kontener `cron` (ten sam obraz co aplikacja, uruchamiany przez `supercronic`) wykonuje

@@ -1,0 +1,56 @@
+{% extends "panel/base_panel.html" %}
+{% load trees_tags %}
+{% block panel %}
+<form class="card" method="get">
+  <div class="row">
+    <label class="field">Status
+      <select name="status">
+        <option value="">wszystkie</option>
+        {% for value, label in statuses %}
+          <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="field">Cykl życia
+      <select name="lifecycle">
+        {% for value, label in lifecycles %}
+          <option value="{{ value }}" {% if filters.lifecycle == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit" class="btn btn-secondary">Filtruj</button>
+  </div>
+</form>
+
+<div class="card">
+  <h2>Drzewa ({{ trees|length }})</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Gatunek</th><th>Miejscowość</th><th>Status</th><th>Posadzone</th><th></th></tr></thead>
+      <tbody>
+        {% for tree in trees %}
+          <tr>
+            <td><a href="{% url 'trees:card' tree_id=tree.pk %}">{{ tree.species }}</a></td>
+            <td>{{ tree.locality.name }}</td>
+            <td>{% status_badge tree.status %}</td>
+            <td class="nowrap">{{ tree.planted_on|date:"d.m.Y" }}</td>
+            <td>
+              <div class="row">
+                <a class="btn btn-ghost" href="{% url 'panel:edit-tree' tree_id=tree.pk %}">Edytuj</a>
+                <form method="post" action="{% url 'panel:toggle-archive' tree_id=tree.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-ghost">
+                    {% if tree.lifecycle == "active" %}Archiwizuj{% else %}Przywróć{% endif %}
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="muted">Brak drzew dla tych filtrów.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

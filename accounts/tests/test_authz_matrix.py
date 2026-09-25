@@ -31,6 +31,15 @@ ENDPOINTS = [
     ("get", "trees:register", {}, {"anonymous": 302, "volunteer": 200, "admin": 200}),
     # 400: empty payload — the point is that anonymous users never get that far.
     ("post", "trees-api:create", {}, {"anonymous": 403, "volunteer": 400, "admin": 400}),
+    # Admin panel (spec §4): volunteers are forbidden, guests are sent to the login page.
+    ("get", "panel:dashboard", {}, {"anonymous": 302, "volunteer": 403, "admin": 200}),
+    ("get", "panel:thresholds", {}, {"anonymous": 302, "volunteer": 403, "admin": 200}),
+    ("get", "panel:users", {}, {"anonymous": 302, "volunteer": 403, "admin": 200}),
+    ("get", "panel:trees", {}, {"anonymous": 302, "volunteer": 403, "admin": 200}),
+    ("post", "panel:recompute", {}, {"anonymous": 302, "volunteer": 403, "admin": 302}),
+    ("get", "admin-api:stats", {}, {"anonymous": 403, "volunteer": 403, "admin": 200}),
+    ("get", "admin-api:config", {}, {"anonymous": 403, "volunteer": 403, "admin": 200}),
+    ("get", "admin-api:users", {}, {"anonymous": 403, "volunteer": 403, "admin": 200}),
 ]
 
 # Same, for endpoints that need an existing tree (kwargs built per test).

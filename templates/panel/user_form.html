@@ -1,0 +1,16 @@
+{% extends "panel/base_panel.html" %}
+{% block panel %}
+<form class="card" method="post">
+  {% csrf_token %}
+  <h2>{{ person.display_name }}</h2>
+  <p class="muted tight">{{ person.email }}</p>
+  {% include "includes/form_errors.html" %}
+  {% include "includes/field.html" with field=form.role %}
+  <label class="field">{{ form.is_active }} {{ form.is_active.label }}</label>
+  {% for error in form.is_active.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+  <div class="row">
+    <button type="submit" class="btn btn-primary">Zapisz</button>
+    <a class="btn btn-ghost" href="{% url 'panel:users' %}">Anuluj</a>
+  </div>
+</form>
+{% endblock %}

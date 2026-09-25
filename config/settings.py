@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "trees",
     "weather",
     "notifications",
+    "panel",
 ]
 
 MIDDLEWARE = [

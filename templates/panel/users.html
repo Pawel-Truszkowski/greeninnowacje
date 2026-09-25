@@ -1,0 +1,23 @@
+{% extends "panel/base_panel.html" %}
+{% block panel %}
+<div class="card">
+  <h2>Użytkownicy ({{ users|length }})</h2>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Osoba</th><th>E-mail</th><th>Rola</th><th>Konto</th><th>Podlań (30 dni)</th><th></th></tr></thead>
+      <tbody>
+        {% for person in users %}
+          <tr>
+            <td>{{ person.display_name }}</td>
+            <td class="muted">{{ person.email }}</td>
+            <td>{{ person.get_role_display }}</td>
+            <td>{% if person.is_active %}✅ aktywne{% else %}⛔ nieaktywne{% endif %}</td>
+            <td>{{ person.waterings_30 }}</td>
+            <td><a class="btn btn-ghost" href="{% url 'panel:edit-user' user_id=person.pk %}">Edytuj</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

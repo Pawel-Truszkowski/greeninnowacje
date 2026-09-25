@@ -1,0 +1,20 @@
+{% extends "panel/base_panel.html" %}
+{% block panel %}
+<form class="card" method="post">
+  {% csrf_token %}
+  <h2>{{ tree.species }}</h2>
+  <p class="muted tight">📍 {{ tree.locality.name }} · zarejestrowane {{ tree.created_at|date:"j E Y" }}</p>
+  {% include "includes/form_errors.html" %}
+  {% include "includes/field.html" with field=form.species %}
+  {% include "includes/field.html" with field=form.species_other %}
+  {% include "includes/field.html" with field=form.planted_on %}
+  {% include "includes/field.html" with field=form.planted_by %}
+  {% include "includes/field.html" with field=form.locality %}
+  {% include "includes/field.html" with field=form.lifecycle %}
+  {% include "includes/field.html" with field=form.notes %}
+  <div class="row">
+    <button type="submit" class="btn btn-primary">Zapisz</button>
+    <a class="btn btn-ghost" href="{% url 'panel:trees' %}">Anuluj</a>
+  </div>
+</form>
+{% endblock %}

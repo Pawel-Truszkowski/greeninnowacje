@@ -20,6 +20,10 @@
     {% if user.is_authenticated %}
       {% url 'trees:register' as register_url %}
       <a href="{{ register_url }}" {% if request.path == register_url %}class="active" aria-current="page"{% endif %}>+ Drzewo</a>
+      {% if user.is_app_admin %}
+        {% url 'panel:dashboard' as admin_url %}
+        <a href="{{ admin_url }}" {% if request.path == admin_url %}class="active" aria-current="page"{% endif %}>Admin</a>
+      {% endif %}
       {% url 'trees:my' as my_url %}
       <a href="{{ my_url }}" {% if request.path == my_url %}class="active" aria-current="page"{% endif %}>Moje drzewa</a>
       <form method="post" action="{% url 'accounts:logout' %}">

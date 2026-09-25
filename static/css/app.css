@@ -776,3 +776,15 @@ input[aria-invalid="true"] { border-color: var(--urgent); }
 }
 
 .hidden { display: none; }
+
+/* ---------- admin panel ---------- */
+
+.panel-tabs { margin-bottom: 16px; }
+.panel-tabs .chip { text-decoration: none; }
+.nowrap { white-space: nowrap; }
+
+/* Denser tables in the panel: an admin scans many rows at once. */
+.page.wide table.data th,
+.page.wide table.data td { padding: 8px 10px; }
+.page.wide table.data .btn { min-height: 36px; padding: 6px 12px; font-size: .8rem; }
+.page.wide table.data .row { flex-wrap: nowrap; gap: 6px; }
