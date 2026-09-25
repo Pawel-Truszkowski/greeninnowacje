@@ -159,17 +159,20 @@ class TestPublicCard:
         assert body["waterings_total"] == 2
 
     def test_weather_window_keeps_missing_days_as_null(self, client):
+        """The series covers finished days only — today's rainfall is still a forecast."""
         tree = TreeFactory()
-        today = timezone.localdate()
-        WeatherDaily.objects.create(locality=tree.locality, day=today, precip_mm=Decimal("3.20"))
+        yesterday = timezone.localdate() - timedelta(days=1)
         WeatherDaily.objects.create(
-            locality=tree.locality, day=today - timedelta(days=1), precip_mm=Decimal("0")
+            locality=tree.locality, day=yesterday, precip_mm=Decimal("3.20")
+        )
+        WeatherDaily.objects.create(
+            locality=tree.locality, day=yesterday - timedelta(days=1), precip_mm=Decimal("0")
         )
 
         body = client.get(card_url(tree)).json()
 
         assert len(body["weather"]) == 14
-        assert body["weather"][-1] == {"day": today.isoformat(), "precip_mm": 3.2}
+        assert body["weather"][-1] == {"day": yesterday.isoformat(), "precip_mm": 3.2}
         assert body["weather"][-2]["precip_mm"] == 0.0
         assert body["weather"][0]["precip_mm"] is None
         assert body["rain_window_mm"] == 3.2

@@ -16,7 +16,7 @@ from core.models import load_drought_config
 from .geo import DUPLICATE_RADIUS_M, bbox_around, haversine_m
 from .models import Assignment, Locality, Tree, Watering
 from .nominatim import reverse_locality
-from .selectors import weather_series
+from .selectors import last_finished_day, weather_series
 from .status import StatusInputs, compute_status, missing_rain_days
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,9 @@ class CaretakerConflict(Exception):
 
 
 def _status_inputs(tree, today, config):
-    window = weather_series(tree.locality_id, days=config.rain_window_days, today=today)
+    window = weather_series(
+        tree.locality_id, days=config.rain_window_days, end_day=last_finished_day(today)
+    )
     last_watered_at = tree.waterings.aggregate(last=Max("watered_at"))["last"]
     return StatusInputs(
         today=today,

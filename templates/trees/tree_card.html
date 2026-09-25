@@ -96,7 +96,7 @@
 
   <div class="card">
     <h2>Pogoda w miejscowości {{ card.locality.name }}</h2>
-    <p class="muted tight">Opady z ostatnich 14 dni · suma z ostatnich {{ card.rain_window_days }} dni:
+    <p class="muted tight">Opady z ostatnich 14 dni (do wczoraj) · suma z ostatnich {{ card.rain_window_days }} dni:
       <b>{{ card.rain_window_mm|floatformat:1 }} mm</b> (próg: {{ card.rain_threshold_mm|floatformat:0 }} mm)
       {% if card.weather_missing_days %}<br>Braki w danych pogodowych: {{ card.weather_missing_days }} z {{ card.rain_window_days }} dni.{% endif %}
     </p>

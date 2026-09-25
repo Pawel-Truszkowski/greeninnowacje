@@ -64,12 +64,23 @@ def map_tree_payload(tree):
     }
 
 
-def weather_series(locality_id, days=WEATHER_CHART_DAYS, today=None):
-    """Last `days` days of rainfall. A day with no reading is None — not 0 mm (spec §5.1)."""
-    today = today or timezone.localdate()
-    first_day = today - timedelta(days=days - 1)
+def last_finished_day(today=None):
+    """Yesterday — the most recent day whose rainfall is a measurement, not a forecast."""
+    return (today or timezone.localdate()) - timedelta(days=1)
+
+
+def weather_series(locality_id, days=WEATHER_CHART_DAYS, end_day=None):
+    """`days` finished days of rainfall, ending yesterday by default.
+
+    Today is deliberately outside the window: its rainfall is still accumulating, so we
+    never store it (see weather/services.py). Reaching into today would make every run
+    report one missing day, and a warning that always fires is one nobody reads.
+    A day with no reading is None — not 0 mm (spec §5.1).
+    """
+    end_day = end_day or last_finished_day()
+    first_day = end_day - timedelta(days=days - 1)
     readings = dict(
-        WeatherDaily.objects.filter(locality_id=locality_id, day__gte=first_day, day__lte=today)
+        WeatherDaily.objects.filter(locality_id=locality_id, day__gte=first_day, day__lte=end_day)
         .values_list("day", "precip_mm")
     )  # fmt: skip
     return [
@@ -81,7 +92,7 @@ def weather_series(locality_id, days=WEATHER_CHART_DAYS, today=None):
 def public_tree_card(tree, today=None):
     today = today or timezone.localdate()
     config = load_drought_config()
-    series = weather_series(tree.locality_id, today=today)
+    series = weather_series(tree.locality_id, end_day=last_finished_day(today))
     window = series[-config.rain_window_days :] if config.rain_window_days else []
 
     watering_dates = [
