@@ -118,6 +118,11 @@ edytowalne z panelu administratora.
 - Historia podlewań jest **tylko do dopisywania** — pilnuje tego zarówno ORM, jak i trigger
   w PostgreSQL.
 
+## Wdrożenie
+
+Instancja demonstracyjna (do testów na telefonie i pokazu): [`docs/DEPLOY-MIKRUS.md`](docs/DEPLOY-MIKRUS.md).
+Wdrożenie produkcyjne z backupami i pełnym utwardzeniem to etap M4.
+
 ## Stan prac
 
 | Etap | Zakres | Stan |

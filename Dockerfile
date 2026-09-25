@@ -39,7 +39,12 @@ RUN uv sync --locked --no-install-project $UV_SYNC_ARGS
 
 COPY . .
 
-RUN useradd --create-home --uid 1000 app && chown -R app /app
+# The directory must exist in the image before the volume is created: an empty named
+# volume inherits content and ownership from this path, and a root-owned one would make
+# collectstatic fail for the unprivileged user.
+RUN mkdir -p /app/staticfiles \
+    && useradd --create-home --uid 1000 app \
+    && chown -R app /app
 USER app
 
 EXPOSE 8000
