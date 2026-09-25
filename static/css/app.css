@@ -878,3 +878,15 @@ b.soon   { color: var(--soon); }
   .map-legend { display: none; }   /* the filter chips already carry the colours */
   .app-header .brand { white-space: nowrap; }
 }
+
+/* The pin being placed during registration — same shape as on the map, brand colour. */
+.tree-pin.pin-new { background: var(--green-700); }
+
+/* iOS gives date inputs an intrinsic width they refuse to shrink below, which pushes
+   them out of the card on a narrow screen. */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+}

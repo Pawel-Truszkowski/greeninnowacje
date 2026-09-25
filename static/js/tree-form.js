@@ -19,7 +19,20 @@
     attribution: mapEl.dataset.attribution,
   }).addTo(map);
 
-  var marker = L.marker(DEFAULT_CENTER, { draggable: true }).addTo(map);
+  // Our own pin instead of Leaflet's default one: the default loads three PNGs whose
+  // path it *guesses* from the stylesheet, which breaks once filenames carry a hash
+  // (production static storage). A divIcon also matches the pins on the public map.
+  var PIN_SVG =
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="#fff">' +
+    '<path d="M12 2C8 8 5 11.5 5 15a7 7 0 0 0 14 0c0-3.5-3-7-7-13z"/></svg>';
+  var pinIcon = L.divIcon({
+    html: '<div class="tree-pin pin-new">' + PIN_SVG + '</div>',
+    className: '',
+    iconSize: [34, 34],
+    iconAnchor: [17, 30],
+  });
+
+  var marker = L.marker(DEFAULT_CENTER, { draggable: true, icon: pinIcon }).addTo(map);
 
   function round6(value) {
     return Math.round(value * 1e6) / 1e6;
