@@ -2,32 +2,33 @@
 {% load trees_tags %}
 {% block panel %}
 <div class="stat-grid">
-  <div class="stat"><div class="num">{{ stats.trees_total }}</div><div class="lbl">drzew aktywnych</div></div>
-  <div class="stat"><div class="num">{{ stats.by_status.URGENT }}</div><div class="lbl">pilnie podlać</div></div>
-  <div class="stat"><div class="num">{{ stats.by_status.SOON }}</div><div class="lbl">wkrótce podlać</div></div>
-  <div class="stat"><div class="num">{{ stats.by_status.OK }}</div><div class="lbl">podlane</div></div>
-  <div class="stat"><div class="num">{{ stats.waterings_7 }}</div><div class="lbl">podlań w 7 dni</div></div>
-  <div class="stat"><div class="num">{{ stats.waterings_30 }}</div><div class="lbl">podlań w 30 dni</div></div>
-  <div class="stat"><div class="num">{{ stats.volunteers_active }}/{{ stats.volunteers_total }}</div><div class="lbl">aktywni wolontariusze</div></div>
-  <div class="stat"><div class="num">{{ stats.without_caretaker }}</div><div class="lbl">drzew bez opiekuna</div></div>
+  <div class="stat"><div class="num">{{ stats.trees_total }}</div><div class="lbl">🌳 drzew aktywnych</div></div>
+  <div class="stat"><div class="num urgent">{{ stats.by_status.URGENT }}</div><div class="lbl">🔴 pilnie podlać</div></div>
+  <div class="stat"><div class="num soon">{{ stats.by_status.SOON }}</div><div class="lbl">🟠 wkrótce podlać</div></div>
+  <div class="stat"><div class="num ok">{{ stats.by_status.OK }}</div><div class="lbl">🟢 podlane</div></div>
+  <div class="stat"><div class="num">{{ stats.waterings_7 }}</div><div class="lbl">💧 podlań (7 dni)</div></div>
+  <div class="stat"><div class="num">{{ stats.waterings_30 }}</div><div class="lbl">💧 podlań (30 dni)</div></div>
+  <div class="stat"><div class="num">{{ stats.volunteers_active }}/{{ stats.volunteers_total }}</div><div class="lbl">🙋 aktywnych wolontariuszy</div></div>
+  <div class="stat"><div class="num soon">{{ stats.without_caretaker }}</div><div class="lbl">⚠️ drzew bez opiekuna</div></div>
 </div>
 
 <div class="card">
   <h2>Drzewa według miejscowości</h2>
   <div class="table-wrap">
     <table class="data">
-      <thead><tr><th>Miejscowość</th><th>Razem</th><th>Pilne</th><th>Wkrótce</th><th>Podlane</th></tr></thead>
+      <thead><tr><th>Miejscowość</th><th>Razem</th><th>Podlane</th><th>Wkrótce</th><th>Pilne</th><th>Bez opiekuna</th></tr></thead>
       <tbody>
         {% for row in stats.localities %}
           <tr>
-            <td>{{ row.locality__name }}</td>
+            <td><b>{{ row.locality__name }}</b></td>
             <td>{{ row.total }}</td>
-            <td>{{ row.urgent }}</td>
-            <td>{{ row.soon }}</td>
             <td>{{ row.ok }}</td>
+            <td>{{ row.soon }}</td>
+            <td>{% if row.urgent %}<b class="urgent">{{ row.urgent }}</b>{% else %}0{% endif %}</td>
+            <td>{{ row.orphans }}</td>
           </tr>
         {% empty %}
-          <tr><td colspan="5" class="muted">Brak drzew.</td></tr>
+          <tr><td colspan="6" class="muted">Brak drzew.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -35,19 +36,22 @@
 </div>
 
 <div class="card">
-  <h2>Wymagają uwagi</h2>
-  <p class="muted tight">Pilnie potrzebują wody i nie mają opiekuna.</p>
-  {% if stats.needs_attention %}
-    <ul class="timeline">
-      {% for tree in stats.needs_attention %}
-        <li><span class="dot">🔴</span>
-          <span class="when"><a href="{% url 'trees:card' tree_id=tree.pk %}">{{ tree.species }}</a></span>
-          <span class="who">{{ tree.locality.name }}</span></li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p class="muted">Żadne drzewo nie czeka bez opieki. 🌱</p>
-  {% endif %}
+  <h2>Pilnie potrzebują wody 🔴</h2>
+  {% for tree in stats.needs_water %}
+    {% include "panel/includes/tree_row.html" %}
+  {% empty %}
+    <p class="muted">Żadne drzewo nie jest w stanie pilnym. 🌱</p>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h2>Szukają opiekuna 🙋</h2>
+  <p class="muted tight">Także te podlane — bez opiekuna nikt nie dostanie o nich powiadomienia.</p>
+  {% for tree in stats.needs_caretaker %}
+    {% include "panel/includes/tree_row.html" %}
+  {% empty %}
+    <p class="muted">Każde drzewo ma opiekuna. 💚</p>
+  {% endfor %}
 </div>
 
 {% if stats.trees_archived %}

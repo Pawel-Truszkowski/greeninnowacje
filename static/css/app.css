@@ -55,6 +55,9 @@
 * { box-sizing: border-box; }
 
 html, body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
   margin: 0;
   padding: 0;
 }
@@ -490,9 +493,11 @@ table.data td {
 #map { position: absolute; inset: 0; }
 
 .map-page {
-  position: fixed;
-  top: 62px;                     /* below the header */
-  left: 0; right: 0; bottom: 0;
+  /* No hardcoded header height: the header is a flex sibling, so whatever it takes
+     (one row on a phone, two with more nav items) the map fills the rest. */
+  position: relative;
+  flex: 1;
+  min-height: 320px;
 }
 
 .map-overlay-top {
@@ -788,3 +793,88 @@ input[aria-invalid="true"] { border-color: var(--urgent); }
 .page.wide table.data td { padding: 8px 10px; }
 .page.wide table.data .btn { min-height: 36px; padding: 6px 12px; font-size: .8rem; }
 .page.wide table.data .row { flex-wrap: nowrap; gap: 6px; }
+
+/* Coloured figures in the panel, as in the PoC — colour supports the label, never replaces it. */
+.stat .num.urgent { color: var(--urgent); }
+.stat .num.soon   { color: var(--soon); }
+.stat .num.ok     { color: var(--ok); }
+b.urgent { color: var(--urgent); }
+b.soon   { color: var(--soon); }
+
+/* Sections were sticking together. */
+.stat-grid + .card,
+.card + .card { margin-top: 16px; }
+
+
+/* ---------- header on narrow screens ---------- */
+
+@media (max-width: 640px) {
+  .app-header { gap: 8px; padding: 8px 12px; }
+  .app-header .logo { width: 34px; height: 34px; }
+  .app-header .brand { font-size: .95rem; }
+  .app-header .brand small { display: none; }     /* subtitle costs a whole row */
+  .app-header nav { gap: 2px; }
+  .app-header nav a,
+  .app-header nav .link-button { padding: 8px 8px; font-size: .8rem; }
+  /* The account name lives on the "Zalogowano" pill on every page that needs it. */
+  .app-header .account-name { display: none; }
+}
+
+/* ---------- menu on phones: CSS only, no script ---------- */
+
+.nav-burger { display: none; }
+.nav-toggle {
+  /* Kept in the layout (opacity, not display:none) so it stays keyboard-focusable. */
+  position: absolute;
+  opacity: 0;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  right: 12px;
+}
+
+@media (max-width: 640px) {
+  .nav-burger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1.5rem;
+    color: #fff;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .nav-toggle:focus-visible + .nav-burger { outline: 2px solid #fff; outline-offset: 2px; }
+  .nav-toggle:checked + .nav-burger { background: rgba(255,255,255,.18); }
+
+  #main-nav { display: none; }
+  .nav-toggle:checked ~ #main-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--green-800);
+    padding: 8px 12px 14px;
+    box-shadow: var(--shadow-lg);
+  }
+  .nav-toggle:checked ~ #main-nav a,
+  .nav-toggle:checked ~ #main-nav .link-button {
+    justify-content: flex-start;
+    font-size: .95rem;
+    padding: 10px 14px;
+  }
+  /* The name fits again once the menu is a column. */
+  .nav-toggle:checked ~ #main-nav .account-name { display: inline; }
+
+  /* Map controls: one scrollable row instead of three stacked ones. */
+  .map-toolbar { flex-wrap: nowrap; }
+  .map-toolbar .chips { flex-wrap: nowrap; }
+  .map-toolbar .chip { white-space: nowrap; }
+  .map-legend { display: none; }   /* the filter chips already carry the colours */
+  .app-header .brand { white-space: nowrap; }
+}

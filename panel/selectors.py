@@ -31,20 +31,21 @@ def dashboard_stats(today=None):
         .annotate(total=Count("id"))
         .values_list("status", "total")
     )
+    tended = Exists(_active_assignment())
     localities = list(
-        active_trees.values("locality__name")
+        active_trees.annotate(has_caretaker=tended)
+        .values("locality__name")
         .annotate(
             total=Count("id"),
-            urgent=Count("id", filter=Q(status=Tree.Status.URGENT)),
-            soon=Count("id", filter=Q(status=Tree.Status.SOON)),
             ok=Count("id", filter=Q(status=Tree.Status.OK)),
+            soon=Count("id", filter=Q(status=Tree.Status.SOON)),
+            urgent=Count("id", filter=Q(status=Tree.Status.URGENT)),
+            orphans=Count("id", filter=Q(has_caretaker=False)),
         )
         .order_by("locality__name")
     )
 
-    without_caretaker = active_trees.annotate(has_caretaker=Exists(_active_assignment())).filter(
-        has_caretaker=False
-    )
+    without_caretaker = active_trees.annotate(has_caretaker=tended).filter(has_caretaker=False)
 
     return {
         "trees_total": active_trees.count(),
@@ -60,9 +61,13 @@ def dashboard_stats(today=None):
         .distinct()
         .count(),
         "without_caretaker": without_caretaker.count(),
-        # The list an admin actually acts on: urgent and nobody looking after it.
-        "needs_attention": list(
-            without_caretaker.filter(status=Tree.Status.URGENT).select_related("locality")[:20]
+        # Two separate problems, two separate lists — as in the PoC, where a healthy tree
+        # with nobody looking after it is still something the admin has to act on.
+        "needs_water": list(
+            active_trees.filter(status=Tree.Status.URGENT)
+            .annotate(has_caretaker=tended)
+            .select_related("locality")[:20]
         ),
+        "needs_caretaker": list(without_caretaker.select_related("locality")[:20]),
         "today": today,
     }

@@ -14,22 +14,27 @@
   <img src="{% static 'img/logo.png' %}" alt="Green Innowacje" class="logo">
   <a class="brand" href="{% url 'trees:map' %}">Green Innowacje<small>Podlewamy drzewa 🌱</small></a>
   <span class="spacer"></span>
-  <nav>
+
+  <!-- CSS-only menu: the checkbox holds the state, the label is the ☰ button. No script,
+       so the page still works under a strict CSP (M4). -->
+  <input class="nav-toggle" type="checkbox" id="nav-toggle" aria-label="Pokaż menu">
+  <label class="nav-burger" for="nav-toggle" title="Menu">☰</label>
+  <nav id="main-nav">
     {% url 'trees:map' as home_url %}
     <a href="{{ home_url }}" {% if request.path == home_url %}class="active" aria-current="page"{% endif %}>Mapa</a>
     {% if user.is_authenticated %}
       {% url 'trees:register' as register_url %}
       <a href="{{ register_url }}" {% if request.path == register_url %}class="active" aria-current="page"{% endif %}>+ Drzewo</a>
+      {% url 'trees:my' as my_url %}
+      <a href="{{ my_url }}" {% if request.path == my_url %}class="active" aria-current="page"{% endif %}>Moje drzewa</a>
       {% if user.is_app_admin %}
         {% url 'panel:dashboard' as admin_url %}
         <a href="{{ admin_url }}" {% if request.path == admin_url %}class="active" aria-current="page"{% endif %}>Admin</a>
       {% endif %}
-      {% url 'trees:my' as my_url %}
-      <a href="{{ my_url }}" {% if request.path == my_url %}class="active" aria-current="page"{% endif %}>Moje drzewa</a>
       <form method="post" action="{% url 'accounts:logout' %}">
         {% csrf_token %}
         <button type="submit" class="link-button" title="Zalogowano: {{ user.display_name }}">
-          Wyloguj ({{ user.display_name|truncatechars:14 }})
+          Wyloguj<span class="account-name">&nbsp;({{ user.display_name|truncatechars:14 }})</span>
         </button>
       </form>
     {% else %}

@@ -21,10 +21,16 @@ def _errors(form):
 @permission_classes([IsAppAdmin])
 def stats(request):
     data = dashboard_stats()
-    data["needs_attention"] = [
-        {"id": str(tree.pk), "species": tree.species, "locality": tree.locality.name}
-        for tree in data["needs_attention"]
-    ]
+    for key in ("needs_water", "needs_caretaker"):
+        data[key] = [
+            {
+                "id": str(tree.pk),
+                "species": tree.species,
+                "status": tree.status,
+                "locality": tree.locality.name,
+            }
+            for tree in data[key]
+        ]
     return Response(data)
 
 

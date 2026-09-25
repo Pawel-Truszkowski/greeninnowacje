@@ -93,14 +93,32 @@ class TestDashboardStats:
 
         assert stats["without_caretaker"] == 1
 
-    def test_needs_attention_lists_urgent_and_unattended(self, locality, admin):
+    def test_urgent_trees_are_listed_whoever_tends_them(self, locality, admin):
         lonely = TreeFactory(locality=locality, status=Tree.Status.URGENT, species="Lipa")
         tended = TreeFactory(locality=locality, status=Tree.Status.URGENT)
         assign(tended, UserFactory())
 
-        stats = dashboard_stats()
+        listed = dashboard_stats()["needs_water"]
 
-        assert [tree.pk for tree in stats["needs_attention"]] == [lonely.pk]
+        assert {tree.pk for tree in listed} == {lonely.pk, tended.pk}
+        assert {tree.has_caretaker for tree in listed} == {True, False}
+
+    def test_watered_tree_without_a_caretaker_is_still_listed(self, locality, admin):
+        """The case we used to miss: healthy, but nobody gets notified about it."""
+        healthy = TreeFactory(locality=locality, status=Tree.Status.OK)
+        tended = TreeFactory(locality=locality, status=Tree.Status.OK)
+        assign(tended, UserFactory())
+
+        assert [tree.pk for tree in dashboard_stats()["needs_caretaker"]] == [healthy.pk]
+
+    def test_locality_row_counts_trees_without_a_caretaker(self, locality, admin):
+        tended = TreeFactory(locality=locality)
+        TreeFactory(locality=locality)
+        assign(tended, UserFactory())
+
+        (row,) = dashboard_stats()["localities"]
+
+        assert row["total"] == 2 and row["orphans"] == 1
 
     def test_per_locality_breakdown(self, locality, admin):
         other = LocalityFactory(name="Studzieniec")
@@ -356,8 +374,9 @@ def test_stats_api_shape(client, admin, locality):
 
     assert body["trees_total"] == 1
     assert body["by_status"]["URGENT"] == 1
-    assert isinstance(body["needs_attention"], list)
-    assert "species" in body["needs_attention"][0]
+    assert isinstance(body["needs_water"], list)
+    assert "species" in body["needs_water"][0]
+    assert isinstance(body["needs_caretaker"], list)
 
 
 def test_stats_api_has_no_personal_data(client, admin, locality):

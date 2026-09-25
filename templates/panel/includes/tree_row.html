@@ -1,0 +1,11 @@
+{% load trees_tags %}
+<div class="tree-item st-{{ tree.status }}">
+  <div class="info">
+    <a href="{% url 'trees:card' tree_id=tree.pk %}">{{ tree.species }}</a>
+    <div class="meta">
+      📍 {{ tree.locality.name }} ·
+      {% if tree.has_caretaker %}ma opiekuna{% else %}<b class="soon">bez opiekuna</b>{% endif %}
+    </div>
+  </div>
+  {% status_badge tree.status %}
+</div>
