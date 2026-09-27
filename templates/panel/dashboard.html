@@ -20,12 +20,12 @@
       <tbody>
         {% for row in stats.localities %}
           <tr>
-            <td><b>{{ row.locality__name }}</b></td>
-            <td>{{ row.total }}</td>
-            <td>{{ row.ok }}</td>
-            <td>{{ row.soon }}</td>
-            <td>{% if row.urgent %}<b class="urgent">{{ row.urgent }}</b>{% else %}0{% endif %}</td>
-            <td>{{ row.orphans }}</td>
+            <td data-label="Miejscowość"><b>{{ row.locality__name }}</b></td>
+            <td data-label="Razem">{{ row.total }}</td>
+            <td data-label="Podlane">{{ row.ok }}</td>
+            <td data-label="Wkrótce">{{ row.soon }}</td>
+            <td data-label="Pilne">{% if row.urgent %}<b class="urgent">{{ row.urgent }}</b>{% else %}0{% endif %}</td>
+            <td data-label="Bez opiekuna">{{ row.orphans }}</td>
           </tr>
         {% empty %}
           <tr><td colspan="6" class="muted">Brak drzew.</td></tr>

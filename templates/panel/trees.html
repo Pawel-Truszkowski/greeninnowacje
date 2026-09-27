@@ -2,7 +2,7 @@
 {% load trees_tags %}
 {% block panel %}
 <form class="card" method="get">
-  <div class="row">
+  <div class="row filters">
     <label class="field">Status
       <select name="status">
         <option value="">wszystkie</option>
@@ -30,11 +30,11 @@
       <tbody>
         {% for tree in trees %}
           <tr>
-            <td><a href="{% url 'trees:card' tree_id=tree.pk %}">{{ tree.species }}</a></td>
-            <td>{{ tree.locality.name }}</td>
-            <td>{% status_badge tree.status %}</td>
-            <td class="nowrap">{{ tree.planted_on|date:"d.m.Y" }}</td>
-            <td>
+            <td data-label="Gatunek"><a href="{% url 'trees:card' tree_id=tree.pk %}">{{ tree.species }}</a></td>
+            <td data-label="Miejscowość">{{ tree.locality.name }}</td>
+            <td data-label="Status">{% status_badge tree.status %}</td>
+            <td class="nowrap" data-label="Posadzone">{{ tree.planted_on|date:"d.m.Y" }}</td>
+            <td class="actions">
               <div class="row">
                 <a class="btn btn-ghost" href="{% url 'panel:edit-tree' tree_id=tree.pk %}">Edytuj</a>
                 <form method="post" action="{% url 'panel:toggle-archive' tree_id=tree.pk %}">

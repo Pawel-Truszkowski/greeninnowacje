@@ -148,6 +148,10 @@ a { color: var(--green-700); }
   padding: 20px 16px 120px;
 }
 
+/* body is a flex column and .page centres itself with auto margins, which turns off
+   stretching: without an explicit width the page grows to its widest content (a panel
+   table) and the whole layout scrolls sideways on a phone. */
+.page { width: 100%; }
 .page.wide { max-width: 1080px; }
 
 .card {
@@ -801,6 +805,51 @@ b.soon   { color: var(--soon); }
 /* Sections were sticking together. */
 .stat-grid + .card,
 .card + .card { margin-top: 16px; }
+
+/* Filter bar: button sits on the baseline of the selects, fields share the width. */
+.row.filters { align-items: flex-end; }
+.row.filters label.field { flex: 1 1 160px; margin-bottom: 0; }
+
+/* Panel tables on a phone: each row becomes a small card of "label: value" pairs,
+   labels come from data-label on every <td>; the .actions cell holds the buttons. */
+@media (max-width: 640px) {
+  table.data thead { display: none; }   /* the labels move into each cell */
+  table.data, table.data tbody, table.data tr { display: block; }
+  table.data tr { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  table.data tr:last-child { border-bottom: none; }
+
+  /* Same specificity as the dense-table rule above, so this one wins on a phone. */
+  .page.wide table.data td {
+    display: grid;
+    /* Label column shrinks with the screen; minmax(0, …) lets a value wrap instead of
+       pushing the grid wider than the card. */
+    grid-template-columns: minmax(5.5rem, 35%) minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    justify-items: start;                /* a badge keeps its own width */
+    padding: 4px 0;
+    border-bottom: none;
+    overflow-wrap: anywhere;             /* long e-mail addresses */
+  }
+  table.data td::before {
+    content: attr(data-label);
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    overflow-wrap: normal;               /* never split a label mid-word */
+  }
+  table.data .status-badge { white-space: normal; }
+
+  /* Buttons and "nothing here" rows have no label: full width, no label column. */
+  .page.wide table.data td.actions,
+  .page.wide table.data td[colspan] { display: block; }
+  table.data td.actions::before,
+  table.data td[colspan]::before { content: none; }
+  .page.wide table.data td.actions { padding-top: 8px; }
+  .page.wide table.data .row { flex-wrap: wrap; }
+  .page.wide table.data .btn { min-height: 44px; }   /* touch target ≥ 44 px */
+}
 
 
 /* ---------- header on narrow screens ---------- */
