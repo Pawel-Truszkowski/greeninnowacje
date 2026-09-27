@@ -9,7 +9,7 @@ set -euo pipefail
 
 SSH_HOST="${SSH_HOST:?ustaw SSH_HOST, np. root@srv99.mikr.us}"
 SSH_PORT="${SSH_PORT:-22}"
-REMOTE_DIR="${REMOTE_DIR:-/opt/greeninnowacje}"
+REMOTE_DIR="${REMOTE_DIR:-/root/projects/greeninnowacje}"
 COMPOSE="docker compose -f docker-compose.prod.yml"
 
 echo "==> wysyłam kod na ${SSH_HOST}:${REMOTE_DIR}"
