@@ -39,7 +39,7 @@ class TestSeededCatalogue:
         assert TreeSpecies.objects.filter(is_active=False).count() == 0
 
     def test_demo_data_species_are_all_in_the_catalogue(self, settings):
-        """Demo trees include species outside the PoC list (e.g. "Grusza polna")."""
+        """Demo trees include species outside the PoC list (e.g. "Grusza – Konferencja")."""
         settings.DEBUG = True
         call_command("seed_demo", password="haslo-demo-1234")
 

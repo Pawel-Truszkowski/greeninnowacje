@@ -111,6 +111,7 @@ M1 zamknięty 30.09 (plan: 30.09), M2 zamknięty 25.09 (plan: 1–7.10) — jest
 4. **Prywatność (RODO):** według PDF-ów drzewa rosną w prywatnych ogrodach, a publiczna mapa pokazuje dokładne współrzędne. Czy w MVP mapa ma być publiczna z pełną dokładnością?
 5. **MapTiler**: klucz deweloperski działa (Paweł, 24.09); konto produkcyjne ma być założone na organizację. **SMTP (Brevo)** — potrzebne na start M3, też na organizację.
 6. Nazwa marki w UI: „Green Innowacje” (spec, PoC) czy „Greenowacje – Drzewo dla Pokoleń” (PDF-y)?
+7. **Gatunek a odmiana:** PDF 1A2 opisuje kartę drzewa jako „gatunek i odmiana” („Jabłoń – Ligol”, „Grusza – Konferencja”), a dokumenty kontraktowe (specyfikacja §3, architektoniczny, UI) mają jedno pole `species`. W MVP zostaje jedno pole, a dane demonstracyjne używają nazw z 1A2. Do potwierdzenia z mentorem, czy odmiana i związane z nią porady pielęgnacyjne wchodzą do MVP — jeśli tak, najtaniej jako `TreeSpecies.variety` w katalogu, przy `Tree.species` pozostającym tekstem (żaden widok, API ani eksport się nie zmienia). Przy okazji: katalog zasiany migracją `trees/0004` zawiera 10 gatunków parkowych z PoC i **ani jednej odmiany owocowej**, choć 1A2 mówi o drzewach owocowych w ogrodach — warto ustalić docelową listę do wyboru w formularzu.
 
 
 ## Weryfikacja
