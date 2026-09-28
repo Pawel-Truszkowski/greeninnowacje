@@ -1,0 +1,15 @@
+Cześć {{ name }}!
+
+Twoje drzewa czekają na Ciebie 💧 Ostatnie dni były suche — poniższe drzewa
+przydałoby się podlać.
+{% for tree in trees %}
+* {{ tree.species }} — {{ tree.locality }}
+  {{ tree.url }}
+{% endfor %}
+Po podlaniu otwórz kartę drzewa i kliknij „Oznacz jako podlane" — status zmieni
+się od razu.
+
+Wszystkie Twoje drzewa: {{ my_trees_url }}
+
+Dziękujemy, że o nie dbasz! 🌱
+Green Innowacje

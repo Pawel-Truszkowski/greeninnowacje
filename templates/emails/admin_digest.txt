@@ -1,0 +1,24 @@
+Cześć {{ name }}!
+
+Przegląd na {{ today|date:"d.m.Y" }}: {{ urgent_total }} drzew(a) wymaga podlania.
+{% if my_trees %}
+TWOJE DRZEWA
+{% for tree in my_trees %}
+* {{ tree.species }} — {{ tree.locality }}
+  {{ tree.url }}
+{% endfor %}{% endif %}
+WEDŁUG MIEJSCOWOŚCI
+{% for locality in localities %}
+* {{ locality.name }}: {{ locality.urgent }} do podlania, w tym {{ locality.orphans }} bez opiekuna
+{% endfor %}
+{% if orphans %}
+DRZEWA BEZ OPIEKUNA — nikt nie dostanie o nich przypomnienia
+{% for tree in orphans %}
+* {{ tree.species }} — {{ tree.locality }}
+  {{ tree.url }}
+{% endfor %}{% else %}
+Wszystkie drzewa wymagające podlania mają opiekuna.
+{% endif %}
+Panel: {{ panel_url }}
+
+Green Innowacje

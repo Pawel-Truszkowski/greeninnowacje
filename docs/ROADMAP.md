@@ -80,11 +80,12 @@ Kluczowe decyzje przy mapowaniu §3 na Django:
 - [x] Menu ☰ na telefonie (bez JavaScriptu) i mapa bez zależności od wysokości nagłówka
 
 ## M3 — Powiadomienia i eksport (~26.09–2.10)
-- [ ] SMTP z env (zgodny z Brevo); dwa szablony PL z §5.3 (do wolontariusza o jego pilnych drzewach, zbiorczy dla administratorów)
-- [ ] Limit 1 e-mail na użytkownika dziennie, oparty o `EmailLog`; komenda `send_digests` (07:30) jako trzeci wpis w harmonogramie
+- [x] SMTP z env (zgodny z Brevo); dwa szablony PL z §5.3 (do wolontariusza o jego pilnych drzewach, zbiorczy dla administratorów)
+- [x] Limit 1 e-mail na użytkownika dziennie, oparty o `EmailLog`; komenda `send_digests` (07:30) jako trzeci wpis w harmonogramie
 - [x] ~~`GET /api/admin/stats` i ekran statystyk~~ — zrobione w M2 razem z panelem
 - [ ] Eksport CSV (drzewa, podlania, pogoda) w UTF-8 z BOM, sprawdzony w Excelu
 - **Wynik:** wolontariusz dostaje e-mail o suchych drzewach, administrator ma dane do raportu dla grantodawcy.
+- Ustalenia digestu: administrator będący opiekunem pilnego drzewa dostaje **jeden** e-mail z dwiema sekcjami (limit 1/dzień obowiązuje też jego); dzienny limit zużywa tylko **udana** wysyłka (`EmailLog.ok=True`), więc ponowienie po awarii SMTP dokończy robotę; decyzję „kto dostaje który e-mail" podejmuje czysta funkcja `plan_digests()` — bez zapytań do bazy, jak `trees/status.py`.
 
 ## M4 — Utwardzenie produkcyjne i wdrożenie (~3–10.10)
 - [ ] Przejście przez checklistę z §7: HTTPS + HSTS, CSP (tylko domena kafelków), `X-Content-Type-Options`, `Referrer-Policy`, walidacja współrzędnych (granice Polski) i długości pól, rate limit na podlanie, bezpieczne cookies, `check --deploy` bez ostrzeżeń.
@@ -102,7 +103,7 @@ Rola koordynatora; powiadomienia w aplikacji i Web Push; tryb offline (PWA + syn
 ---
 
 ## Tempo
-M1 zamknięty 30.09 (plan: 30.09), M2 zamknięty 25.09 (plan: 1–7.10) — jesteśmy przed harmonogramem. Testów: 463.
+M1 zamknięty 30.09 (plan: 30.09), M2 zamknięty 25.09 (plan: 1–7.10) — jesteśmy przed harmonogramem. Testów: 493.
 
 ## Otwarte kwestie (do mentora lub klienta)
 1. **Frontend:** szablony Django sprawdzają się w praktyce (mapa, panel, widok mobilny). Warto to formalnie potwierdzić z mentorem i zamknąć temat.

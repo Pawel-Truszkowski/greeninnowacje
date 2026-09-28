@@ -56,16 +56,30 @@ def test_every_scheduled_command_exists_in_django():
 
 
 @pytest.mark.parametrize(
-    ("command", "hour"),
-    [("fetch_weather", "5"), ("recompute_statuses", "7")],
+    ("command", "hour", "minute"),
+    [
+        ("fetch_weather", "5", "0"),
+        ("recompute_statuses", "7", "0"),
+        # 07:30, so the digests are built from statuses recomputed half an hour earlier.
+        ("send_digests", "7", "30"),
+    ],
 )
-def test_schedule_matches_the_spec(command, hour):
-    """Spec §6: weather at 05:00, statuses at 07:00 (Europe/Warsaw)."""
+def test_schedule_matches_the_spec(command, hour, minute):
+    """Spec §6: weather 05:00, statuses 07:00, digests 07:30 (Europe/Warsaw)."""
     matching = [entry for entry in entries() if django_command(entry) == command]
 
     assert len(matching) == 1, f"Oczekiwano jednego wpisu dla {command}"
     assert matching[0]["hour"] == hour
-    assert matching[0]["minute"] == "0"
+    assert matching[0]["minute"] == minute
+
+
+def test_digests_run_after_the_statuses():
+    """The order is the point: a digest built on yesterday's statuses is misinformation."""
+    times = {
+        django_command(entry): (int(entry["hour"]), int(entry["minute"])) for entry in entries()
+    }
+
+    assert times["send_digests"] > times["recompute_statuses"]
 
 
 def test_schedule_does_not_touch_the_schema():

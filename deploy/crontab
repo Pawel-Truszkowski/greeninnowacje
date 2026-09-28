@@ -6,3 +6,4 @@
 
 0 5 * * * python manage.py fetch_weather
 0 7 * * * python manage.py recompute_statuses
+30 7 * * * python manage.py send_digests
