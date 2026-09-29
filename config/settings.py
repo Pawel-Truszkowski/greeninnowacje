@@ -114,8 +114,20 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+# Uploaded photos (Etap 2). Nothing serves MEDIA_ROOT to the web: an authenticated view does,
+# which is what makes "logged-in only" real and lets the backend become S3 from env alone.
+MEDIA_URL = "media/"
+MEDIA_ROOT = env("MEDIA_ROOT", default=str(BASE_DIR / "media"))
+# A spooling threshold, not a cap: bigger uploads go to a temp file instead of RAM. The cap
+# lives in trees/images.py — DATA_UPLOAD_MAX_MEMORY_SIZE does not cover multipart file parts.
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+
 STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "default": {
+        "BACKEND": env(
+            "DEFAULT_FILE_STORAGE", default="django.core.files.storage.FileSystemStorage"
+        )
+    },
     # Hashed, compressed files need `collectstatic`, so only in production (DEBUG=false).
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"

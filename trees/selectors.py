@@ -146,6 +146,7 @@ def extended_tree_card(tree, today=None):
     ]
     card["caretaker"] = caretaker.display_name if caretaker else None
     card["caretaker_id"] = str(caretaker.pk) if caretaker else None
+    card["photos"] = list(tree.photos.all())
     return card
 
 

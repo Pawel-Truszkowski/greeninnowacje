@@ -17,7 +17,8 @@ from core.models import load_drought_config
 from weather.services import backfill_locality
 
 from .geo import DUPLICATE_RADIUS_M, bbox_around, haversine_m
-from .models import Assignment, Locality, Tree, Watering
+from .images import process_upload
+from .models import Assignment, Locality, Tree, TreePhoto, Watering
 from .nominatim import reverse_locality
 from .selectors import last_finished_day, weather_series
 from .status import StatusInputs, compute_status, missing_rain_days
@@ -294,3 +295,58 @@ def recompute_all(*, today=None, locality_id=None, save=True) -> RecomputeResult
         Tree.objects.bulk_update(changed, ["status"])
 
     return RecomputeResult(checked=len(trees), changed=len(changed), counts=dict(counts))
+
+
+# --- photos (Etap 2) -----------------------------------------------------------------
+
+MAX_PHOTOS_PER_TREE = 24
+
+
+class PhotoNotAllowed(Exception):
+    """This user may not add or remove this photo. The message reaches the user, so PL."""
+
+
+def can_manage_photos(tree, user):
+    """Caretaker, whoever registered the tree, or an admin.
+
+    Narrower than watering, which any logged-in volunteer may record: a watering is a fact
+    about the tree, a photo is content nobody moderates.
+    """
+    # First, because AnonymousUser has no `is_app_admin`.
+    if not user.is_authenticated:
+        return False
+    if user.is_app_admin or tree.created_by_id == user.pk:
+        return True
+    return caretaker_of(tree) == user
+
+
+def add_photo(tree, user, upload):
+    """Store one photo of `tree`; `InvalidImage` passes through for a file we cannot use."""
+    if not can_manage_photos(tree, user):
+        raise PhotoNotAllowed("Zdjęcie może dodać opiekun drzewa, jego autor lub administrator.")
+    if TreePhoto.objects.filter(tree=tree).count() >= MAX_PHOTOS_PER_TREE:
+        raise PhotoNotAllowed(f"To drzewo ma już maksymalną liczbę zdjęć ({MAX_PHOTOS_PER_TREE}).")
+
+    # Last, so a refused upload never costs a decode.
+    processed = process_upload(upload)
+    return TreePhoto.objects.create(
+        tree=tree,
+        uploaded_by=user,
+        image=processed.file,
+        width=processed.width,
+        height=processed.height,
+    )
+
+
+def delete_photo(photo, user):
+    """Remove a photo and its file — its author or an admin may.
+
+    A real delete, unlike trees, which are only archived: a photo can show a person, and that
+    person may ask for it to go.
+    """
+    if not user.is_authenticated or not (user.is_app_admin or photo.uploaded_by_id == user.pk):
+        raise PhotoNotAllowed("Usunąć zdjęcie może jego autor lub administrator.")
+
+    # Deleting the row leaves the file behind, and an orphan is still a photo of somebody.
+    photo.image.delete(save=False)
+    photo.delete()

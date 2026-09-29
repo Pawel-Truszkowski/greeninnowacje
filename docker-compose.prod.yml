@@ -41,6 +41,9 @@ services:
       - "${APP_PORT}:${APP_PORT}"
     volumes:
       - staticfiles:/app/staticfiles
+      # Uploaded photos. Outside the image, so a rebuild keeps them — and pg_dump alone is
+      # no longer a complete backup: this volume has to be copied too.
+      - media:/app/media
     depends_on:
       db:
         condition: service_healthy
@@ -67,3 +70,4 @@ services:
 volumes:
   pgdata:
   staticfiles:
+  media:
