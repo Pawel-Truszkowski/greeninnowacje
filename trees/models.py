@@ -96,6 +96,43 @@ class Tree(models.Model):
         return f"{self.species} ({self.locality})"
 
 
+def tree_photo_path(instance, filename):
+    """Where a photo lands. `filename` is ignored — a name from the browser is user input,
+    and everything is a JPEG by the time it gets here."""
+    return f"tree_photos/{instance.tree_id}/{uuid.uuid4()}.jpg"
+
+
+class TreePhoto(models.Model):
+    """A photo documenting a tree's growth (Etap 2; 1A2: „historia zdjęć").
+
+    Visible to logged-in users only — `public_tree_card()` must never expose these. Unlike
+    trees, a photo can be deleted outright: it may show a person who asks for that.
+    """
+
+    # UUID: the id lands in the file path and the URL, and a counter would let anyone walk
+    # through every photo and count them.
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tree = models.ForeignKey(Tree, on_delete=models.PROTECT, related_name="photos")
+    image = models.ImageField("zdjęcie", upload_to=tree_photo_path)
+    # For <img width height>, so the card does not jump while the photo loads.
+    width = models.PositiveIntegerField(default=0)
+    height = models.PositiveIntegerField(default=0)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="tree_photos"
+    )
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        db_table = "tree_photos"
+        verbose_name = "zdjęcie drzewa"
+        verbose_name_plural = "zdjęcia drzew"
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["tree", "-created_at"], name="tree_photos_tree_idx")]
+
+    def __str__(self):
+        return f"{self.tree_id} @ {self.created_at:%Y-%m-%d %H:%M}"
+
+
 class AppendOnlyError(Exception):
     pass
 
