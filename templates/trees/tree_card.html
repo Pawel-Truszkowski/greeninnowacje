@@ -28,10 +28,53 @@
     {% endif %}
   </div>
 
-  <div class="card photo-placeholder">
-    <span class="art">🌳</span>
-    Zdjęcie drzewa — planowane w Etapie 2
-  </div>
+  {# Photos are for logged-in users only: a private garden shows houses and people. #}
+  {% if user.is_authenticated and card.photos %}
+    <div class="card">
+      <h2>Zdjęcia</h2>
+      {% with newest=card.photos.0 %}
+        <img class="tree-photo" src="{% url 'trees:photo' photo_id=newest.pk %}"
+             width="{{ newest.width }}" height="{{ newest.height }}"
+             alt="Zdjęcie drzewa: {{ card.species }}">
+      {% endwith %}
+
+      {% if card.photos|length > 1 %}
+        <ul class="photo-strip">
+          {% for photo in card.photos|slice:"1:" %}
+            <li>
+              <img src="{% url 'trees:photo' photo_id=photo.pk %}"
+                   width="{{ photo.width }}" height="{{ photo.height }}" alt="">
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% for photo in card.photos %}
+        {% if photo.uploaded_by_id == user.id or user.is_app_admin %}
+          <form method="post" action="{% url 'trees:remove-photo' tree_id=card.id photo_id=photo.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary">Usuń zdjęcie z {{ photo.created_at|date:"j E Y" }}</button>
+          </form>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card photo-placeholder">
+      <span class="art">🌳</span>
+      {% if user.is_authenticated %}Brak zdjęć tego drzewa{% else %}Zdjęcia widoczne po zalogowaniu{% endif %}
+    </div>
+  {% endif %}
+
+  {% if can_add_photo %}
+    <form class="card" method="post" enctype="multipart/form-data"
+          action="{% url 'trees:add-photo' tree_id=card.id %}">
+      {% csrf_token %}
+      <h2>Dodaj zdjęcie</h2>
+      <p class="muted tight">Pokaż, jak drzewo rośnie. Zdjęcie zobaczą zalogowani wolontariusze.</p>
+      {% include "includes/field.html" with field=photo_form.image %}
+      <button type="submit" class="btn btn-primary">Wyślij zdjęcie</button>
+    </form>
+  {% endif %}
 
   <div class="card">
     <h2>Informacje</h2>

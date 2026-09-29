@@ -478,6 +478,30 @@ table.data td {
 
 /* ---------- photo placeholder ---------- */
 
+/* Tree photos (Etap 2). width/height come from the markup, so the card does not jump. */
+.tree-photo {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+}
+
+.photo-strip {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.photo-strip img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
 .photo-placeholder {
   background: linear-gradient(160deg, var(--green-100), var(--green-50));
   border-radius: var(--radius);

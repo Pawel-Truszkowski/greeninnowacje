@@ -86,3 +86,18 @@ class TreeRegistrationForm(forms.ModelForm):
     def registration_fields(self):
         """Model fields for `register_tree` (everything except the locality name)."""
         return {name: self.cleaned_data[name] for name in self.Meta.fields}
+
+
+class PhotoForm(forms.Form):
+    """One photo, taken on the spot (UI doc §106: „aparat/galeria").
+
+    A plain `FileField`, not an `ImageField`: `trees.images.process_upload` is the only place
+    that judges a file, so the page and the JSON API refuse identical uploads for identical
+    reasons.
+    """
+
+    image = forms.FileField(
+        label="Zdjęcie drzewa",
+        # `capture` makes a phone open the rear camera instead of the file browser.
+        widget=forms.ClearableFileInput(attrs={"accept": "image/*", "capture": "environment"}),
+    )

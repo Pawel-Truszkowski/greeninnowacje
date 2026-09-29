@@ -12,6 +12,14 @@ urlpatterns = [
     path("drzewo/<uuid:tree_id>/podlano", views.water_tree, name="water"),
     path("drzewo/<uuid:tree_id>/opieka", views.take_care, name="take-care"),
     path("drzewo/<uuid:tree_id>/rezygnacja", views.stop_care, name="stop-care"),
+    path("drzewo/<uuid:tree_id>/zdjecia", views.add_tree_photo, name="add-photo"),
+    path(
+        "drzewo/<uuid:tree_id>/zdjecia/<uuid:photo_id>/usun",
+        views.remove_tree_photo,
+        name="remove-photo",
+    ),
+    # The file itself. No tree in the path — the photo id is already unguessable.
+    path("zdjecie/<uuid:photo_id>", views.tree_photo, name="photo"),
 ]
 
 api_urlpatterns = [
@@ -23,6 +31,8 @@ api_urlpatterns = [
     path("<uuid:tree_id>/waterings", api.tree_watering, name="waterings"),
     path("<uuid:tree_id>/assign", api.tree_assign, name="assign"),
     path("<uuid:tree_id>/unassign", api.tree_unassign, name="unassign"),
+    path("<uuid:tree_id>/photos", api.tree_photos, name="photos"),
+    path("<uuid:tree_id>/photos/<uuid:photo_id>", api.tree_photo_detail, name="photo-detail"),
 ]
 
 me_api_urlpatterns = [

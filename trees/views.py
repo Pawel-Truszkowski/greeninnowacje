@@ -2,22 +2,28 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 
 from core.ratelimit import rate_limit
 
-from .forms import TreeRegistrationForm
-from .models import Locality, Tree
+from .forms import PhotoForm, TreeRegistrationForm
+from .images import InvalidImage
+from .models import Locality, Tree, TreePhoto
 from .selectors import extended_tree_card, public_tree_card
 from .services import (
     CaretakerConflict,
     DuplicateTree,
     LocalityUnknown,
+    PhotoNotAllowed,
+    add_photo,
     assign_caretaker,
+    can_manage_photos,
     caretaker_of,
     days_since,
+    delete_photo,
     humanized_days,
     my_trees,
     record_watering,
@@ -57,6 +63,8 @@ def tree_card(request, tree_id):
             "tree": tree,
             "is_my_tree": caretaker == request.user,
             "has_caretaker": caretaker is not None,
+            "can_add_photo": can_manage_photos(tree, request.user),
+            "photo_form": PhotoForm(),
         }
     else:
         context = {"card": public_tree_card(tree), "tree": tree}
@@ -164,3 +172,53 @@ def register_tree_view(request):
         },
     }
     return render(request, "trees/register.html", context)
+
+
+@require_POST
+@login_required
+@rate_limit("photo", lambda: settings.PHOTO_RATE_LIMIT, key="user")
+def add_tree_photo(request, tree_id):
+    """Store an uploaded photo, then back to the card with a message."""
+    tree = _active_tree(tree_id)
+    if request.limited:
+        messages.error(request, "Za dużo zdjęć w krótkim czasie. Spróbuj później.")
+        return redirect("trees:card", tree_id=tree.pk)
+
+    form = PhotoForm(request.POST, request.FILES)
+    if not form.is_valid():
+        messages.error(request, "Wybierz zdjęcie do wysłania.")
+        return redirect("trees:card", tree_id=tree.pk)
+
+    try:
+        add_photo(tree, request.user, form.cleaned_data["image"])
+    # Neither is a server error; both are something the user can act on (UI doc §107).
+    except (PhotoNotAllowed, InvalidImage) as problem:
+        messages.error(request, str(problem))
+    else:
+        messages.success(request, "Dziękujemy! Zdjęcie zostało dodane 🌱")
+    return redirect("trees:card", tree_id=tree.pk)
+
+
+@require_POST
+@login_required
+def remove_tree_photo(request, tree_id, photo_id):
+    photo = get_object_or_404(TreePhoto, pk=photo_id, tree_id=tree_id)
+    try:
+        delete_photo(photo, request.user)
+    except PhotoNotAllowed as problem:
+        messages.error(request, str(problem))
+    else:
+        messages.success(request, "Zdjęcie zostało usunięte.")
+    return redirect("trees:card", tree_id=tree_id)
+
+
+@login_required
+def tree_photo(request, photo_id):
+    """The only way a photo leaves the server, so `login_required` *is* the visibility rule.
+
+    `FileResponse` streams from the storage backend, so this keeps working when the backend
+    becomes S3. The content type is fixed rather than read from the file: everything stored is
+    a JPEG, and a constant plus the global `nosniff` ends content-type games.
+    """
+    photo = get_object_or_404(TreePhoto, pk=photo_id)
+    return FileResponse(photo.image.open("rb"), content_type="image/jpeg")

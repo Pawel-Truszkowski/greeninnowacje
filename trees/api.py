@@ -7,7 +7,12 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import APIException, Throttled, ValidationError
+from rest_framework.exceptions import (
+    APIException,
+    PermissionDenied,
+    Throttled,
+    ValidationError,
+)
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -21,14 +26,19 @@ from accounts.permissions import IsVolunteer
 from core.ratelimit import rate_limit
 
 from .forms import TreeRegistrationForm
-from .models import Tree
+from .images import InvalidImage
+from .models import Tree, TreePhoto
 from .qr import qr_png, tree_card_url
 from .selectors import extended_tree_card, map_tree_payload, map_trees, public_tree_card
 from .services import (
     CaretakerConflict,
     DuplicateTree,
     LocalityUnknown,
+    PhotoNotAllowed,
+    add_photo,
     assign_caretaker,
+    can_manage_photos,
+    delete_photo,
     my_trees,
     record_watering,
     register_tree,
@@ -236,3 +246,46 @@ def tree_create(request):
         },
         status=HTTP_201_CREATED,
     )
+
+
+@api_view(["POST"])
+@permission_classes([IsVolunteer])
+def tree_photos(request, tree_id):
+    """Upload a photo: 201 with its id and the URL that serves it."""
+    tree = get_object_or_404(Tree, pk=tree_id, lifecycle=Tree.Lifecycle.ACTIVE)
+    # Permission before the payload: a user who may not upload should hear 403, not 400 about
+    # a missing file.
+    if not can_manage_photos(tree, request.user):
+        raise PermissionDenied("Zdjęcie może dodać opiekun drzewa, jego autor lub administrator.")
+
+    upload = request.FILES.get("image")
+    if upload is None:
+        raise ValidationError({"image": "Dołącz plik zdjęcia."})
+
+    try:
+        photo = add_photo(tree, request.user, upload)
+    except PhotoNotAllowed as problem:
+        raise PermissionDenied(str(problem)) from problem
+    except InvalidImage as problem:
+        raise ValidationError({"image": str(problem)}) from problem
+
+    return Response(
+        {
+            "id": str(photo.pk),
+            "url": reverse("trees:photo", kwargs={"photo_id": photo.pk}),
+            "width": photo.width,
+            "height": photo.height,
+        },
+        status=HTTP_201_CREATED,
+    )
+
+
+@api_view(["DELETE"])
+@permission_classes([IsVolunteer])
+def tree_photo_detail(request, tree_id, photo_id):
+    photo = get_object_or_404(TreePhoto, pk=photo_id, tree_id=tree_id)
+    try:
+        delete_photo(photo, request.user)
+    except PhotoNotAllowed as problem:
+        raise PermissionDenied(str(problem)) from problem
+    return Response(status=HTTP_204_NO_CONTENT)

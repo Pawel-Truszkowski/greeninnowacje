@@ -62,8 +62,12 @@ TREE_ENDPOINTS = [
     ("post", "trees-api:assign", {"anonymous": 403, "volunteer": 201, "admin": 201}),
     # 400: nothing to release — the point is that anonymous users are stopped earlier.
     ("post", "trees-api:unassign", {"anonymous": 403, "volunteer": 400, "admin": 400}),
+    # Photos (Etap 2) are narrower than watering: the tree here belongs to somebody else, so a
+    # plain volunteer is refused outright, while the admin gets 400 for sending no file.
+    ("post", "trees-api:photos", {"anonymous": 403, "volunteer": 403, "admin": 400}),
     # Pages redirect: anonymous to the login form, logged-in users back to the card.
     ("post", "trees:water", {"anonymous": 302, "volunteer": 302, "admin": 302}),
+    ("post", "trees:add-photo", {"anonymous": 302, "volunteer": 302, "admin": 302}),
     ("post", "trees:take-care", {"anonymous": 302, "volunteer": 302, "admin": 302}),
     ("post", "trees:stop-care", {"anonymous": 302, "volunteer": 302, "admin": 302}),
 ]
