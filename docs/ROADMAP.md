@@ -83,7 +83,7 @@ Kluczowe decyzje przy mapowaniu §3 na Django:
 - [x] SMTP z env (zgodny z Brevo); dwa szablony PL z §5.3 (do wolontariusza o jego pilnych drzewach, zbiorczy dla administratorów)
 - [x] Limit 1 e-mail na użytkownika dziennie, oparty o `EmailLog`; komenda `send_digests` (07:30) jako trzeci wpis w harmonogramie
 - [x] ~~`GET /api/admin/stats` i ekran statystyk~~ — zrobione w M2 razem z panelem
-- [ ] Eksport CSV (drzewa, podlania, pogoda) w UTF-8 z BOM, sprawdzony w Excelu — kod gotowy (`panel/export.py`, `/api/admin/export/*.csv`, strona `/admin/eksport`, 68 testów); **zostaje ręczne otwarcie trzech plików w Excelu**, czyli kryterium akceptacji z §9
+- [x] Eksport CSV (drzewa, podlania, pogoda) w UTF-8 z BOM — `panel/export.py`, `/api/admin/export/*.csv`, strona `/admin/eksport`, 68 testów; pliki otwarte w Excelu i sprawdzone ręcznie (29.09, kryterium §9)
 - **Wynik:** wolontariusz dostaje e-mail o suchych drzewach, administrator ma dane do raportu dla grantodawcy.
 - Ustalenia digestu: administrator będący opiekunem pilnego drzewa dostaje **jeden** e-mail z dwiema sekcjami (limit 1/dzień obowiązuje też jego); dzienny limit zużywa tylko **udana** wysyłka (`EmailLog.ok=True`), więc ponowienie po awarii SMTP dokończy robotę; decyzję „kto dostaje który e-mail" podejmuje czysta funkcja `plan_digests()` — bez zapytań do bazy, jak `trees/status.py`.
 - Ustalenia eksportu: separator `;` i przecinek dziesiętny, bo polski Excel dzieli na średniku i nie sumuje kolumny z kropką; wiersze noszą surowe wartości z modeli, a całą konwersję robi `format_value()` w jednym miejscu; eksport drzew zawiera **też** zarchiwizowane (raport roczny obejmuje to, co wycofano).
