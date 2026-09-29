@@ -10,9 +10,10 @@ from django.db.models import Count, Exists, OuterRef, Q
 from django.utils import timezone
 
 from accounts.models import User
-from trees.models import Assignment, Tree, Watering
+from trees.models import Assignment, Tree, TreePhoto, Watering
 
 RECENT_DAYS = 7
+PHOTO_LIST_LIMIT = 60
 ACTIVITY_DAYS = 30
 
 
@@ -71,3 +72,16 @@ def dashboard_stats(today=None):
         "needs_caretaker": list(without_caretaker.select_related("locality")[:20]),
         "today": today,
     }
+
+
+def recent_photos(limit=PHOTO_LIST_LIMIT):
+    """Latest photos from the whole system, for the moderation screen.
+
+    Carries volunteer names, so — like `panel/export.py` — this is for the admin panel only
+    and must never feed a public view.
+    """
+    return list(
+        TreePhoto.objects.select_related("tree__locality", "uploaded_by").order_by("-created_at")[
+            :limit
+        ]
+    )

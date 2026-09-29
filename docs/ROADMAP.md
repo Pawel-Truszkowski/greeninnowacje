@@ -99,12 +99,15 @@ Kluczowe decyzje przy mapowaniu §3 na Django:
 Kalibracja progów suszy na prawdziwych danych, poprawki po pierwszych testach z wolontariuszami.
 
 ## Etap 2 (po MVP, do decyzji klienta)
-Rola koordynatora; powiadomienia w aplikacji i Web Push; tryb offline (PWA + synchronizacja); zdjęcia drzew; z PDF-ów: pula kodów QR drukowanych przed rejestracją drzewa, wpisy uczestników, porady sezonowe, katalog gatunków i odmian owocowych, kilku opiekunów jednego drzewa.
+Rola koordynatora; powiadomienia w aplikacji i Web Push; tryb offline (PWA + synchronizacja); z PDF-ów: pula kodów QR drukowanych przed rejestracją drzewa, wpisy uczestników, porady sezonowe, katalog gatunków i odmian owocowych, kilku opiekunów jednego drzewa.
+
+### Postęp
+- [x] **Zdjęcia drzew** (29.09) — model `TreePhoto` (historia zdjęć, nie jedno zdjęcie, wg 1A2), `trees/images.py` przekodowujące każdy upload do JPEG-a i usuwające przy tym **cały EXIF razem z GPS-em**, upload z karty drzewa i z `POST /api/trees/{id}/photos`, panel moderacji `/admin/zdjecia`. Widoczne **tylko dla zalogowanych** — do decyzji klienta (kwestia 8). Pliki w wolumenie `media`, docelowo S3: `STORAGES` i `MEDIA_ROOT` czytane z env, pliki podaje uwierzytelniony widok, więc przepięcie to zmiana konfiguracji, nie kodu.
 
 ---
 
 ## Tempo
-M1 zamknięty 30.09 (plan: 30.09), M2 zamknięty 25.09 (plan: 1–7.10) — jesteśmy przed harmonogramem. Testów: 573.
+M1 zamknięty 30.09 (plan: 30.09), M2 zamknięty 25.09 (plan: 1–7.10) — jesteśmy przed harmonogramem. Testów: 669.
 
 ## Otwarte kwestie (do mentora lub klienta)
 1. **Frontend:** szablony Django sprawdzają się w praktyce (mapa, panel, widok mobilny). Warto to formalnie potwierdzić z mentorem i zamknąć temat.
@@ -114,6 +117,7 @@ M1 zamknięty 30.09 (plan: 30.09), M2 zamknięty 25.09 (plan: 1–7.10) — jest
 5. **MapTiler**: klucz deweloperski działa (Paweł, 24.09); konto produkcyjne ma być założone na organizację. **SMTP (Brevo)** — potrzebne na start M3, też na organizację.
 6. Nazwa marki w UI: „Green Innowacje” (spec, PoC) czy „Greenowacje – Drzewo dla Pokoleń” (PDF-y)?
 7. **Gatunek a odmiana:** PDF 1A2 opisuje kartę drzewa jako „gatunek i odmiana” („Jabłoń – Ligol”, „Grusza – Konferencja”), a dokumenty kontraktowe (specyfikacja §3, architektoniczny, UI) mają jedno pole `species`. W MVP zostaje jedno pole, a dane demonstracyjne używają nazw z 1A2. Do potwierdzenia z mentorem, czy odmiana i związane z nią porady pielęgnacyjne wchodzą do MVP — jeśli tak, najtaniej jako `TreeSpecies.variety` w katalogu, przy `Tree.species` pozostającym tekstem (żaden widok, API ani eksport się nie zmienia). Przy okazji: katalog zasiany migracją `trees/0004` zawiera 10 gatunków parkowych z PoC i **ani jednej odmiany owocowej**, choć 1A2 mówi o drzewach owocowych w ogrodach — warto ustalić docelową listę do wyboru w formularzu.
+8. **Publiczna widoczność zdjęć (RODO):** zdjęcia drzew są dziś widoczne wyłącznie dla zalogowanych, a publiczna karta QR pokazuje placeholder. UI doc §97 wymienia zdjęcie jako element karty, a karta jest publiczna — ale drzewa rosną w prywatnych ogrodach, więc zdjęcie pokazuje elewację domu i ludzi. Do decyzji klienta razem z kwestią nr 4 o dokładności współrzędnych. Zmiana na publiczne to zdjęcie `@login_required` z `trees.views.tree_photo` i dodanie zdjęć do `public_tree_card()`.
 
 
 ## Weryfikacja

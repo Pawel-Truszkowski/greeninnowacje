@@ -65,6 +65,36 @@ Migracje i pliki statyczne wykonują się przy starcie kontenera
 ([`deploy/entrypoint.sh`](../deploy/entrypoint.sh)). Baza mieszka w wolumenie Dockera,
 więc wdrożenie jej nie dotyka.
 
+## Kopia zapasowa — od Etapu 2 to dwie rzeczy, nie jedna
+
+Zdjęcia drzew leżą w wolumenie `media`, a nie w bazie. Sam `pg_dump` przestał więc być pełną
+kopią: po odtworzeniu tabela `tree_photos` wskazywałaby na pliki, których nie ma, a karta
+drzewa sypałaby błędem. Trzeba zabrać oba.
+
+```bash
+cd /projects/greeninnowacje
+COMPOSE="docker compose -f docker-compose.prod.yml"
+
+# 1. baza
+$COMPOSE exec -T db pg_dump -U greeninnowacje greeninnowacje | gzip > db-$(date +%F).sql.gz
+
+# 2. zdjęcia (nazwa wolumenu: <katalog>_media)
+docker run --rm -v greeninnowacje_media:/media -v "$PWD":/out alpine \
+  tar czf /out/media-$(date +%F).tgz -C /media .
+```
+
+Przywracanie — **kolejność ma znaczenie: najpierw pliki, potem baza.** Odwrotnie aplikacja
+przez chwilę ma wiersze bez plików i zwraca 500 na kartach drzew:
+
+```bash
+docker run --rm -v greeninnowacje_media:/media -v "$PWD":/in alpine \
+  sh -c "rm -rf /media/* && tar xzf /in/media-RRRR-MM-DD.tgz -C /media"
+gunzip -c db-RRRR-MM-DD.sql.gz | $COMPOSE exec -T db psql -U greeninnowacje greeninnowacje
+```
+
+Kopia poza serwer (rclone) i **sprawdzone** przywracanie na czystej maszynie to nadal M4 —
+tu jest tylko komenda, nie przetestowana procedura.
+
 ## Porty — najczęstsza pułapka
 
 Maszyna ma publiczny adres **tylko w IPv6**. Po IPv4 działają wyłącznie porty, które

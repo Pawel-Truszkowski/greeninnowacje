@@ -12,11 +12,11 @@ from django.views.decorators.http import require_POST
 
 from accounts.models import User
 from accounts.permissions import app_admin_required
-from trees.models import Tree
-from trees.services import recompute_all
+from trees.models import Tree, TreePhoto
+from trees.services import delete_photo, recompute_all
 
 from .forms import ThresholdsForm, TreeAdminForm, UserAdminForm
-from .selectors import ACTIVITY_DAYS, dashboard_stats
+from .selectors import ACTIVITY_DAYS, dashboard_stats, recent_photos
 
 
 @app_admin_required
@@ -124,3 +124,19 @@ def toggle_archive(request, tree_id):
 def export(request):
     """Download links for the CSV exports (spec §4). The files come from panel/export.py."""
     return render(request, "panel/export.html", {"tab": "export"})
+
+
+@app_admin_required
+def photos(request):
+    return render(request, "panel/photos.html", {"photos": recent_photos(), "tab": "photos"})
+
+
+@require_POST
+@app_admin_required
+def remove_photo(request, photo_id):
+    """Moderation: remove a photo somebody asked about, or one that should not be there."""
+    photo = get_object_or_404(TreePhoto, pk=photo_id)
+    # Through the service, never queryset.delete() — that leaves the file on disk.
+    delete_photo(photo, request.user)
+    messages.success(request, "Zdjęcie zostało usunięte.")
+    return redirect("panel:photos")

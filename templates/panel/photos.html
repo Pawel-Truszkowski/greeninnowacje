@@ -1,0 +1,34 @@
+{% extends "panel/base_panel.html" %}
+{% block panel %}
+<section class="card">
+  <h2>Zdjęcia drzew 🖼️</h2>
+  <p class="muted tight">Ostatnie zdjęcia z całego systemu, od najnowszego. Usunięcie jest
+    nieodwracalne — plik znika razem z wpisem, także wtedy, gdy ktoś poprosi o usunięcie
+    swojego wizerunku.</p>
+</section>
+
+{% if photos %}
+  <ul class="photo-grid">
+    {% for photo in photos %}
+      <li class="card">
+        <img src="{% url 'trees:photo' photo_id=photo.pk %}"
+             width="{{ photo.width }}" height="{{ photo.height }}"
+             alt="Zdjęcie drzewa: {{ photo.tree.species }}">
+        <p class="tight">
+          <a href="{% url 'trees:card' tree_id=photo.tree_id %}">{{ photo.tree.species }}</a>
+        </p>
+        <p class="muted tight">
+          📍 {{ photo.tree.locality.name }}<br>
+          {{ photo.uploaded_by.display_name }} · {{ photo.created_at|date:"j E Y, H:i" }}
+        </p>
+        <form method="post" action="{% url 'panel:remove-photo' photo_id=photo.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-secondary">Usuń zdjęcie</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="card muted">Brak zdjęć. Wolontariusze dodają je z karty drzewa.</p>
+{% endif %}
+{% endblock %}

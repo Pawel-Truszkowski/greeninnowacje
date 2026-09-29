@@ -50,6 +50,7 @@ ENDPOINTS = [
     ),
     ("get", "admin-api:export-weather", {}, {"anonymous": 403, "volunteer": 403, "admin": 200}),
     ("get", "panel:export", {}, {"anonymous": 302, "volunteer": 403, "admin": 200}),
+    ("get", "panel:photos", {}, {"anonymous": 302, "volunteer": 403, "admin": 200}),
 ]
 
 # Same, for endpoints that need an existing tree (kwargs built per test).

@@ -486,6 +486,23 @@ table.data td {
   border-radius: var(--radius);
 }
 
+/* Admin moderation list. auto-fill so it works from one phone column upwards. */
+.photo-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+}
+
+.photo-grid img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
 .photo-strip {
   list-style: none;
   display: flex;
