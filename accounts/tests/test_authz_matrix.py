@@ -40,6 +40,16 @@ ENDPOINTS = [
     ("get", "admin-api:stats", {}, {"anonymous": 403, "volunteer": 403, "admin": 200}),
     ("get", "admin-api:config", {}, {"anonymous": 403, "volunteer": 403, "admin": 200}),
     ("get", "admin-api:users", {}, {"anonymous": 403, "volunteer": 403, "admin": 200}),
+    # CSV exports (spec §4): rows carry volunteer names, so admin only.
+    ("get", "admin-api:export-trees", {}, {"anonymous": 403, "volunteer": 403, "admin": 200}),
+    (
+        "get",
+        "admin-api:export-waterings",
+        {},
+        {"anonymous": 403, "volunteer": 403, "admin": 200},
+    ),
+    ("get", "admin-api:export-weather", {}, {"anonymous": 403, "volunteer": 403, "admin": 200}),
+    ("get", "panel:export", {}, {"anonymous": 302, "volunteer": 403, "admin": 200}),
 ]
 
 # Same, for endpoints that need an existing tree (kwargs built per test).

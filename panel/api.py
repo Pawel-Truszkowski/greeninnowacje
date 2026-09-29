@@ -9,6 +9,7 @@ from accounts.models import User
 from accounts.permissions import IsAppAdmin
 from trees.models import Tree
 
+from .export import csv_response
 from .forms import ThresholdsForm, TreeAdminForm, UserAdminForm
 from .selectors import dashboard_stats
 
@@ -99,3 +100,21 @@ def tree_detail(request, tree_id):
             "locality": tree.locality.name,
         }
     )
+
+
+@api_view(["GET"])
+@permission_classes([IsAppAdmin])
+def trees_csv(request):
+    return csv_response("trees")
+
+
+@api_view(["GET"])
+@permission_classes([IsAppAdmin])
+def waterings_csv(request):
+    return csv_response("waterings")
+
+
+@api_view(["GET"])
+@permission_classes([IsAppAdmin])
+def weather_csv(request):
+    return csv_response("weather")

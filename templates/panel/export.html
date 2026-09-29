@@ -1,0 +1,32 @@
+{% extends "panel/base_panel.html" %}
+{% block panel %}
+<section class="card">
+  <h2>Eksport danych 📄</h2>
+  <p class="muted tight">Pliki CSV w UTF-8, rozdzielane średnikiem — otwierają się w Excelu
+    dwuklikiem, z polskimi znakami i liczbami rozpoznanymi jako liczby. W nazwie pliku jest
+    data pobrania, więc kolejne eksporty nie nadpisują się w folderze.</p>
+</section>
+
+<section class="card">
+  <h2>Drzewa</h2>
+  <p class="muted tight">Wszystkie drzewa, także zarchiwizowane: miejscowość, gatunek, data
+    posadzenia, status, współrzędne, opiekun i kto je dodał.</p>
+  <a class="btn btn-primary" href="{% url 'admin-api:export-trees' %}">Pobierz drzewa (CSV)</a>
+</section>
+
+<section class="card">
+  <h2>Podlania</h2>
+  <p class="muted tight">Pełna historia podlewania, od najnowszego: które drzewo, kiedy i przez
+    kogo. Zapisów podlewania nie da się zmienić ani usunąć, więc to gotowy materiał do
+    rozliczenia wolontariatu.</p>
+  <a class="btn btn-primary" href="{% url 'admin-api:export-waterings' %}">Pobierz podlania (CSV)</a>
+</section>
+
+<section class="card">
+  <h2>Pogoda</h2>
+  <p class="muted tight">Opady i temperatura maksymalna dla każdej miejscowości, dzień po dniu —
+    dane, na których opierają się statusy suszy. Puste pole temperatury oznacza brak pomiaru,
+    nie zero.</p>
+  <a class="btn btn-primary" href="{% url 'admin-api:export-weather' %}">Pobierz pogodę (CSV)</a>
+</section>
+{% endblock %}

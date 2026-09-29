@@ -118,3 +118,9 @@ def toggle_archive(request, tree_id):
         f"Drzewo {'zarchiwizowane' if archiving else 'przywrócone'}: {tree.species}.",
     )
     return redirect("panel:trees")
+
+
+@app_admin_required
+def export(request):
+    """Download links for the CSV exports (spec §4). The files come from panel/export.py."""
+    return render(request, "panel/export.html", {"tab": "export"})

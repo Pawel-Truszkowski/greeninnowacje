@@ -13,6 +13,7 @@ urlpatterns = [
     path("drzewa", views.tree_list, name="trees"),
     path("drzewa/<uuid:tree_id>", views.edit_tree, name="edit-tree"),
     path("drzewa/<uuid:tree_id>/archiwizuj", views.toggle_archive, name="toggle-archive"),
+    path("eksport", views.export, name="export"),
 ]
 
 api_urlpatterns = [
@@ -21,4 +22,8 @@ api_urlpatterns = [
     path("users", api.user_list, name="users"),
     path("users/<uuid:user_id>", api.user_detail, name="user-detail"),
     path("trees/<uuid:tree_id>", api.tree_detail, name="tree-detail"),
+    # Literal ".csv" in the path (spec §4): browsers and Excel go by the extension.
+    path("export/trees.csv", api.trees_csv, name="export-trees"),
+    path("export/waterings.csv", api.waterings_csv, name="export-waterings"),
+    path("export/weather.csv", api.weather_csv, name="export-weather"),
 ]
