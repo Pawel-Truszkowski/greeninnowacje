@@ -355,4 +355,7 @@ class TestRegistrationScreenTexts:
         content = client.get(PAGE_URL).content.decode()
 
         assert 'name="photo"' in content
-        assert 'capture="environment"' in content, "Telefon ma otworzyć aparat, nie przeglądarkę"
+        assert 'accept="image/*"' in content, "Wybór plików ograniczony do obrazów"
+        assert "capture=" not in content, (
+            "`capture` wymusza aparat i odcina galerię — UI doc §106 chce obu dróg"
+        )

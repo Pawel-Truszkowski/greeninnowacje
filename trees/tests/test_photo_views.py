@@ -457,3 +457,17 @@ class TestCardLayout:
 
         assert "photo-field" in content
         assert "photo-field-art" in content
+
+
+@pytest.mark.django_db
+class TestPhotoInputOffersBothSources:
+    """UI doc §106 asks for „aparat/galeria" — both, and the user picks."""
+
+    def test_card_upload_does_not_force_the_camera(self, client, tree_and_caretaker):
+        tree, caretaker = tree_and_caretaker
+        client.force_login(caretaker)
+
+        content = client.get(reverse("trees:card", kwargs={"tree_id": tree.pk})).content.decode()
+
+        assert 'accept="image/*"' in content
+        assert "capture=" not in content, "`capture` zabiera użytkownikowi wybór galerii"

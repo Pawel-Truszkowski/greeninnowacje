@@ -8,8 +8,11 @@ from .selectors import active_species_names
 # Sentinel choice that reveals the free-text field (PoC: "Inny (wpiszę ręcznie)").
 OTHER_SPECIES = "__other__"
 
-# `capture` makes a phone open the rear camera instead of the file browser (UI doc §106).
-PHOTO_INPUT_ATTRS = {"accept": "image/*", "capture": "environment"}
+# Deliberately no `capture`: that attribute is an instruction, not a hint, and sends a phone
+# straight to the camera with no way back to the gallery. Without it the browser shows its own
+# chooser — camera, photo library or files — which is what UI doc §106 („aparat/galeria") asks
+# for. `accept` keeps that chooser to images.
+PHOTO_INPUT_ATTRS = {"accept": "image/*"}
 
 
 class TreeRegistrationForm(forms.ModelForm):
