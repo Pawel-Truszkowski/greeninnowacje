@@ -21,9 +21,17 @@ from weather.models import WeatherDaily
 
 SEED_NAMESPACE = uuid.UUID("7d3c2f1e-5b8a-4c6d-9e0f-1a2b3c4d5e6f")
 
+# Real places: the demo trees stand by the open-air museum, which is inside Sierpc, and the
+# second group in Studzieniec 1.3 km north. The earlier coordinates were ~2 km out and
+# reverse-geocoded to other villages entirely, so the demo map named the wrong town.
+#
+# Every tree below was checked through `reverse_locality()` on 2026-09-30 and resolves to the
+# locality it is filed under. No test can hold that — §9 forbids calling Nominatim — so if you
+# move a tree, re-run the check by hand: village limits here are tight enough that 200 m in
+# the wrong direction lands in the next one.
 LOCALITIES = {
-    1: ("Sierpc", "52.871000", "19.651000"),
-    2: ("Studzieniec", "52.849000", "19.723000"),
+    1: ("Sierpc", "52.852905", "19.667543"),
+    2: ("Studzieniec", "52.876720", "19.641300"),
 }
 
 # precipitation in mm, index 0 = 13 days ago … index 13 = today
@@ -47,38 +55,38 @@ SP2 = "SP nr 2 w Sierpcu (klasa 5b)"
 # (key, species, locality, lat, lng, accuracy, planted days ago, planted by, notes,
 #  status, caretaker, [(days ago, watered by), …])
 TREES = [
-    ("t01", "Lipa drobnolistna", 1, "52.872100", "19.647800", "4.2", 92, SP2,
+    ("t01", "Lipa drobnolistna", 1, "52.864860", "19.634778", "4.2", 92, SP2,
      "Skansen — przy wejściu głównym, obok kasy.", "URGENT", "u1",
      [(9, "u1"), (16, "u1"), (23, "u2")]),
-    ("t02", "Dąb szypułkowy", 1, "52.869800", "19.653100", "3.1", 145, SKANSEN,
+    ("t02", "Dąb szypułkowy", 1, "52.864815", "19.637163", "3.1", 145, SKANSEN,
      "Przy alei prowadzącej do dworu.", "OK", "u1",
      [(1, "u1"), (6, "u1"), (12, "u1"), (19, "u3")]),
-    ("t03", "Klon zwyczajny", 1, "52.873400", "19.654900", "5.8", 60,
+    ("t03", "Klon zwyczajny", 1, "52.866435", "19.637973", "5.8", 60,
      "Wolontariusze Green Innowacje", "Obok wiatraka koźlaka. Podpora wymaga poprawy.",
      "SOON", "u2", [(4, "u2"), (11, "u2")]),
-    ("t04", "Brzoza brodawkowata", 1, "52.867900", "19.646500", "6.5", 210, "Green Innowacje",
+    ("t04", "Brzoza brodawkowata", 1, "52.863960", "19.634193", "6.5", 210, "Green Innowacje",
      "Przy zagrodzie z Rzeszotar.", "URGENT", None, [(12, "u3"), (21, "u3")]),
-    ("t05", "Jarząb pospolity", 1, "52.872700", "19.642100", "4.0", 33, SKANSEN,
+    ("t05", "Jarząb pospolity", 1, "52.866120", "19.632213", "4.0", 33, SKANSEN,
      "Młode nasadzenie przy karczmie — pierwszy sezon.", "SOON", "u1",
      [(4, "u1"), (8, "u1"), (14, "u1")]),
-    ("t06", "Lipa drobnolistna", 1, "52.869200", "19.658000", "3.7", 92, SP2,
+    ("t06", "Lipa drobnolistna", 1, "52.864545", "19.639368", "3.7", 92, SP2,
      "Aleja przy kościele z Drążdżewa.", "OK", "u3", [(2, "u3"), (9, "u3")]),
-    ("t07", "Jabłoń – Ligol", 1, "52.874600", "19.649500", "8.9", 120, SKANSEN,
+    ("t07", "Jabłoń – Ligol", 1, "52.863735", "19.635543", "8.9", 120, SKANSEN,
      "Sad przy chałupie — pierwsze drzewo nowego sadu.", "OK", None, [(2, "u2")]),
-    ("t08", "Dąb szypułkowy", 1, "52.868800", "19.651200", "4.4", 145, SKANSEN,
+    ("t08", "Dąb szypułkowy", 1, "52.864365", "19.636308", "4.4", 145, SKANSEN,
      "Bliźniak dębu przy alei do dworu.", "SOON", None, [(5, "u1"), (13, "u2")]),
-    ("t09", "Wiśnia – Łutówka", 1, "52.871400", "19.655800", "5.1", 75, "Koło Gospodyń Wiejskich",
+    ("t09", "Wiśnia – Łutówka", 1, "52.865535", "19.638378", "5.1", 75, "Koło Gospodyń Wiejskich",
      "Przy zagrodzie z młynem.", "OK", "u1", [(1, "u1"), (7, "u1"), (15, "u1")]),
-    ("t10", "Grusza – Konferencja", 1, "52.870300", "19.644700", "3.9", 180, SKANSEN,
+    ("t10", "Grusza – Konferencja", 1, "52.865040", "19.633383", "3.9", 180, SKANSEN,
      "Na miedzy przy polu pokazowym.", "OK", "u2", [(3, "u2"), (10, "u2")]),
-    ("t11", "Grab pospolity", 2, "52.848200", "19.725100", "4.6", 55,
+    ("t11", "Grab pospolity", 2, "52.876360", "19.642245", "4.6", 55,
      "Koło Gospodyń Wiejskich w Studzieńcu", "Przy świetlicy wiejskiej.", "URGENT", None,
      [(11, "u3")]),
-    ("t12", "Dąb bezszypułkowy", 2, "52.851100", "19.720800", "5.5", 260, "Green Innowacje",
+    ("t12", "Dąb bezszypułkowy", 2, "52.877665", "19.640310", "5.5", 260, "Green Innowacje",
      "", "OK", "u3", [(2, "u3"), (8, "u3"), (17, "u3")]),
-    ("t13", "Klon zwyczajny", 2, "52.847300", "19.718600", "7.2", 40, "OSP Studzieniec",
+    ("t13", "Klon zwyczajny", 2, "52.875955", "19.639320", "7.2", 40, "OSP Studzieniec",
      "Nasadzenie przy remizie.", "SOON", "u2", [(4, "u2"), (12, "u2")]),
-    ("t14", "Jarząb pospolity", 2, "52.850300", "19.726900", "4.8", 40, "OSP Studzieniec",
+    ("t14", "Jarząb pospolity", 2, "52.877305", "19.643055", "4.8", 40, "OSP Studzieniec",
      "", "OK", None, [(2, "u1")]),
 ]  # fmt: skip
 
