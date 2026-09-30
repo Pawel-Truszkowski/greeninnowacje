@@ -1,5 +1,6 @@
 """Tree registration: duplicates, locality resolution, API and page (spec §4, §5.2)."""
 
+import io
 from datetime import timedelta
 from decimal import Decimal
 
@@ -8,6 +9,7 @@ import pytest
 import respx
 from django.urls import reverse
 from django.utils import timezone
+from PIL import Image
 
 from factories import LocalityFactory, TreeFactory, UserFactory
 from trees.models import Tree
@@ -231,3 +233,114 @@ def test_register_tree_service_raises_duplicate():
         )
 
     assert error.value.existing == existing
+
+
+class TestPhotoDuringRegistration:
+    """A photo taken on the spot (PoC: the placeholder in the registration form)."""
+
+    @pytest.fixture(autouse=True)
+    def media_root(self, settings, tmp_path):
+        settings.MEDIA_ROOT = str(tmp_path)
+
+    def photo(self, name="zdjecie.jpg"):
+        buffer = io.BytesIO()
+        Image.new("RGB", (800, 600), "green").save(buffer, "JPEG")
+        buffer.seek(0)
+        buffer.name = name
+        return buffer
+
+    def test_tree_and_photo_are_saved_together(self, client, volunteer):
+        response = client.post(PAGE_URL, payload(photo=self.photo()), follow=True)
+
+        tree = Tree.objects.get()
+        assert response.status_code == 200
+        assert tree.photos.count() == 1
+        assert tree.photos.get().uploaded_by == volunteer
+
+    def test_photo_is_optional(self, client, volunteer):
+        client.post(PAGE_URL, payload(), follow=True)
+
+        assert Tree.objects.get().photos.count() == 0
+
+    def test_a_broken_photo_does_not_cost_the_tree(self, client, volunteer):
+        """She is standing in a field: warn about the file, keep the tree."""
+        junk = io.BytesIO(b"to nie jest obraz")
+        junk.name = "notatka.jpg"
+
+        response = client.post(PAGE_URL, payload(photo=junk), follow=True)
+
+        tree = Tree.objects.get()
+        assert tree.photos.count() == 0
+        levels = [message.level_tag for message in response.context["messages"]]
+        assert "warning" in levels
+        assert "success" in levels, "Rejestracja mimo wszystko się udała"
+
+    def test_duplicate_says_the_photo_has_to_be_picked_again(self, client, volunteer):
+        TreeFactory(lat=SIERPC[0], lng=SIERPC[1])
+
+        response = client.post(PAGE_URL, payload(photo=self.photo()))
+
+        assert "Wybierz zdjęcie ponownie" in response.content.decode()
+        assert Tree.objects.count() == 1, "Duplikat nie zapisuje drzewa"
+
+    def test_duplicate_without_a_photo_says_nothing_about_photos(self, client, volunteer):
+        TreeFactory(lat=SIERPC[0], lng=SIERPC[1])
+
+        response = client.post(PAGE_URL, payload())
+
+        assert "Wybierz zdjęcie ponownie" not in response.content.decode()
+
+    def test_form_accepts_files_at_all(self, client, volunteer):
+        """Without enctype="multipart/form-data" the file never arrives."""
+        content = client.get(PAGE_URL).content.decode()
+
+        assert 'enctype="multipart/form-data"' in content
+
+
+class TestRegistrationScreenTexts:
+    """The wording and layout agreed from the PoC (UI doc §8.5)."""
+
+    def test_intro_sentence(self, client, volunteer):
+        content = client.get(PAGE_URL).content.decode()
+
+        assert "Stoisz przy drzewie? Świetnie" in content
+        assert "przesuwając pinezkę" in content
+
+    def test_location_card_has_a_heading_and_an_accuracy_slot(self, client, volunteer):
+        content = client.get(PAGE_URL).content.decode()
+
+        assert "Lokalizacja GPS" in content
+        assert 'id="gps-accuracy"' in content, "Plakietka dokładności jest wypełniana skryptem"
+        assert 'id="coords"' in content
+
+    def test_locality_is_hidden_behind_a_toggle(self, client, volunteer):
+        """The locality comes from the coordinates; typing it is the exception (PoC „zmień")."""
+        content = client.get(PAGE_URL).content.decode()
+
+        assert "<details" in content
+        assert "zmień miejscowość" in content
+        assert "miejscowość ustalimy automatycznie" in content
+
+    def test_toggle_starts_closed(self, client, volunteer):
+        assert '<details class="locality-override">' in client.get(PAGE_URL).content.decode()
+
+    def test_toggle_opens_itself_when_the_geocoder_fails(self, client, volunteer, monkeypatch):
+        """Then the field is the only way forward, so it must not be hidden behind a toggle."""
+        monkeypatch.setattr("trees.services.reverse_locality", lambda lat, lng: None)
+
+        content = client.post(PAGE_URL, payload()).content.decode()
+
+        assert 'class="locality-override" open' in content
+        assert "wpisz ją proszę ręcznie" in content
+
+    def test_page_is_as_wide_as_the_rest_of_the_app(self, client, volunteer):
+        """The PoC has no narrow variant here — the map and the location card need the room."""
+        content = client.get(PAGE_URL).content.decode()
+
+        assert '<main class="page">' in content
+
+    def test_photo_field_is_offered(self, client, volunteer):
+        content = client.get(PAGE_URL).content.decode()
+
+        assert 'name="photo"' in content
+        assert 'capture="environment"' in content, "Telefon ma otworzyć aparat, nie przeglądarkę"

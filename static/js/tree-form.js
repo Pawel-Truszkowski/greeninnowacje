@@ -8,6 +8,8 @@
 
   var mapEl = document.getElementById('pick-map');
   var statusEl = document.getElementById('gps-status');
+  var accuracyEl = document.getElementById('gps-accuracy');
+  var coordsEl = document.getElementById('coords');
   var latInput = document.getElementById('id_lat');
   var lngInput = document.getElementById('id_lng');
   var accuracyInput = document.getElementById('id_gps_accuracy_m');
@@ -42,6 +44,7 @@
     marker.setLatLng([lat, lng]);
     latInput.value = round6(lat);
     lngInput.value = round6(lng);
+    coordsEl.textContent = round6(lat).toFixed(5) + ', ' + round6(lng).toFixed(5);
     if (accuracy !== undefined) accuracyInput.value = Math.round(accuracy * 10) / 10;
   }
 
@@ -50,6 +53,10 @@
     var saved = [parseFloat(latInput.value), parseFloat(lngInput.value)];
     map.setView(saved, 18);
     marker.setLatLng(saved);
+    coordsEl.textContent = saved[0].toFixed(5) + ', ' + saved[1].toFixed(5);
+    accuracyEl.textContent = accuracyInput.value
+      ? 'dokładność: ±' + Math.round(parseFloat(accuracyInput.value)) + ' m'
+      : 'pozycja ustawiona ręcznie';
     statusEl.textContent = 'Lokalizacja z poprzedniej próby — sprawdź pinezkę.';
   } else if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
@@ -57,29 +64,37 @@
         var coords = position.coords;
         setPosition(coords.latitude, coords.longitude, coords.accuracy);
         map.setView([coords.latitude, coords.longitude], 19);
-        statusEl.textContent = 'Dokładność GPS: ±' + Math.round(coords.accuracy) + ' m.';
+        accuracyEl.textContent = 'dokładność: ±' + Math.round(coords.accuracy) + ' m';
+        statusEl.textContent = '';
       },
       function () {
-        statusEl.textContent = 'Brak zgody na lokalizację — wskaż miejsce, przesuwając pinezkę.';
+        accuracyEl.textContent = 'brak zgody na GPS';
+        coordsEl.textContent = 'nieznana';
+        statusEl.textContent = 'Wskaż miejsce drzewa, przesuwając pinezkę na mapie.';
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
   } else {
+    accuracyEl.textContent = 'GPS niedostępny';
+    coordsEl.textContent = 'nieznana';
     statusEl.textContent = 'Twoja przeglądarka nie udostępnia lokalizacji — przesuń pinezkę.';
+  }
+
+  function placeByHand(lat, lng) {
+    // A hand-placed pin has no GPS accuracy to report.
+    accuracyInput.value = '';
+    setPosition(lat, lng);
+    accuracyEl.textContent = 'pozycja ustawiona ręcznie';
+    statusEl.textContent = '';
   }
 
   marker.on('dragend', function () {
     var position = marker.getLatLng();
-    // A hand-placed pin has no GPS accuracy to report.
-    accuracyInput.value = '';
-    setPosition(position.lat, position.lng);
-    statusEl.textContent = 'Pinezka ustawiona ręcznie.';
+    placeByHand(position.lat, position.lng);
   });
 
   map.on('click', function (event) {
-    accuracyInput.value = '';
-    setPosition(event.latlng.lat, event.latlng.lng);
-    statusEl.textContent = 'Pinezka ustawiona ręcznie.';
+    placeByHand(event.latlng.lat, event.latlng.lng);
   });
 
   /* The free-text species field only makes sense for the "Inny" choice. */

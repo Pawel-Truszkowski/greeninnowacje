@@ -8,6 +8,9 @@ from .selectors import active_species_names
 # Sentinel choice that reveals the free-text field (PoC: "Inny (wpiszę ręcznie)").
 OTHER_SPECIES = "__other__"
 
+# `capture` makes a phone open the rear camera instead of the file browser (UI doc §106).
+PHOTO_INPUT_ATTRS = {"accept": "image/*", "capture": "environment"}
+
 
 class TreeRegistrationForm(forms.ModelForm):
     """Registering a tree in the field (UI doc §8.5): as few required fields as possible.
@@ -25,10 +28,18 @@ class TreeRegistrationForm(forms.ModelForm):
         max_length=120,
         help_text="Wypełnij, jeśli wybrano „Inny”.",
     )
+    # Hidden behind the „zmień" toggle under the map (PoC): the locality normally comes from
+    # the coordinates, and typing it is the exception, not the rule.
     locality_name = forms.CharField(
         label="Miejscowość",
         required=False,
-        help_text="Zostaw puste — ustalimy ją z lokalizacji.",
+        help_text="Wpisz tylko wtedy, gdy automatyczne rozpoznanie się pomyli.",
+    )
+    photo = forms.FileField(
+        label="Zdjęcie drzewa",
+        required=False,
+        help_text="Możesz zrobić je od razu — albo dodać później z karty drzewa.",
+        widget=forms.ClearableFileInput(attrs=PHOTO_INPUT_ATTRS),
     )
 
     class Meta:
@@ -98,6 +109,5 @@ class PhotoForm(forms.Form):
 
     image = forms.FileField(
         label="Zdjęcie drzewa",
-        # `capture` makes a phone open the rear camera instead of the file browser.
-        widget=forms.ClearableFileInput(attrs={"accept": "image/*", "capture": "environment"}),
+        widget=forms.ClearableFileInput(attrs=PHOTO_INPUT_ATTRS),
     )

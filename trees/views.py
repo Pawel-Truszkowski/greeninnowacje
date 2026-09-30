@@ -133,6 +133,20 @@ def my_trees_view(request):
 REGISTERED_MESSAGE = "🎉 Drzewo zarejestrowane! Wydrukuj kod QR i przymocuj go przy drzewie."
 
 
+def _attach_registration_photo(request, tree, upload):
+    """Add the photo taken during registration, if any — after the tree is safely saved.
+
+    A broken file must not cost the volunteer the tree: she is standing in a field, and a
+    warning she can act on later is better than losing the whole form.
+    """
+    if not upload:
+        return
+    try:
+        add_photo(tree, request.user, upload)
+    except (InvalidImage, PhotoNotAllowed) as problem:
+        messages.warning(request, f"Zdjęcia nie udało się zapisać: {problem} Dodaj je z karty.")
+
+
 @login_required
 def register_tree_view(request):
     """Register a tree while standing next to it (UI doc §8.5).
@@ -141,7 +155,7 @@ def register_tree_view(request):
     A tree closer than 2 m is reported back as a question — "is this the same tree?" —
     and the volunteer can insist by resubmitting with `force`.
     """
-    form = TreeRegistrationForm(request.POST or None)
+    form = TreeRegistrationForm(request.POST or None, request.FILES or None)
     duplicate = None
 
     if request.method == "POST" and form.is_valid():
@@ -153,7 +167,12 @@ def register_tree_view(request):
                 **form.registration_fields(),
             )
         except DuplicateTree as found:
-            duplicate = {"tree": found.existing, "distance_m": round(found.distance_m, 1)}
+            duplicate = {
+                "tree": found.existing,
+                "distance_m": round(found.distance_m, 1),
+                # A browser cannot refill a file input, so the photo is gone from this form.
+                "photo_lost": bool(form.cleaned_data.get("photo")),
+            }
         except LocalityUnknown:
             form.add_error(
                 "locality_name",
@@ -161,6 +180,7 @@ def register_tree_view(request):
             )
         else:
             messages.success(request, REGISTERED_MESSAGE)
+            _attach_registration_photo(request, tree, form.cleaned_data.get("photo"))
             return redirect("trees:card", tree_id=tree.pk)
 
     context = {
