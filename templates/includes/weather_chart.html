@@ -5,9 +5,7 @@
           class="bar{% if bar.missing %} bar-missing{% elif bar.dry %} bar-dry{% endif %}">
       <title>{{ bar.label|date:"j E" }}: {% if bar.missing %}brak danych{% else %}{{ bar.value }} mm{% endif %}</title>
     </rect>
-    {# Rotation as an SVG attribute, not CSS: Safari on iOS does not reliably honour
-       transform-box: fill-box, and rotates every label around the chart's origin
-       instead of its own box — the labels fan out diagonally. #}
+    {% comment %}Rotation as an SVG attribute, not CSS: Safari on iOS does not reliably honour transform-box: fill-box, and rotates every label around the chart's origin instead of its own box — the labels fan out diagonally.{% endcomment %}
     <text x="{{ bar.label_x }}" y="{{ label_y }}" class="bar-label" text-anchor="end"
           transform="rotate(-45 {{ bar.label_x }} {{ label_y }})">{{ bar.label|date:"d.m" }}</text>
   {% endfor %}

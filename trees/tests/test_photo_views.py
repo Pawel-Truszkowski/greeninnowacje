@@ -399,3 +399,61 @@ class TestGallery:
 
         assert "lightbox" not in content
         assert "/zdjecie/" not in content
+
+
+@pytest.mark.django_db
+class TestCardLayout:
+    """Section order and the controls' placement, agreed from the PoC."""
+
+    def content(self, client, tree):
+        return client.get(reverse("trees:card", kwargs={"tree_id": tree.pk})).content.decode()
+
+    def test_information_comes_before_the_photos(self, client, stored_photo):
+        _, tree, caretaker = stored_photo
+        client.force_login(caretaker)
+
+        content = self.content(client, tree)
+
+        assert content.index("<h2>Informacje</h2>") < content.index("<h2>Zdjęcia")
+
+    def test_care_lives_in_the_same_card_as_watering(self, client, tree_and_caretaker):
+        """PoC: one decision about this tree, one card — not a separate section further down."""
+        tree, caretaker = tree_and_caretaker
+        client.force_login(caretaker)
+
+        content = self.content(client, tree)
+        top_card = content[
+            : content.index('<div class="card">', content.index("Oznacz jako podlane"))
+        ]
+
+        assert "Oznacz jako podlane" in top_card
+        assert "Zrezygnuj z opieki" in top_card
+        assert "Opieka nad drzewem" not in content, "Stara osobna sekcja miała zniknąć"
+
+    def test_tree_without_a_caretaker_invites_one(self, client):
+        tree = TreeFactory()
+        client.force_login(UserFactory())
+
+        content = self.content(client, tree)
+
+        assert "drzewo szuka opiekuna" in content
+        assert reverse("trees:take-care", kwargs={"tree_id": tree.pk}) in content
+
+    def test_preview_offers_two_ways_out(self, client, stored_photo):
+        """A full-screen overlay must not trap anyone behind a single small button."""
+        _, tree, caretaker = stored_photo
+        client.force_login(caretaker)
+
+        content = self.content(client, tree)
+
+        assert "lightbox-backdrop" in content
+        assert "Zamknij" in content
+
+    def test_upload_form_uses_the_registration_styling(self, client, tree_and_caretaker):
+        tree, caretaker = tree_and_caretaker
+        client.force_login(caretaker)
+
+        content = self.content(client, tree)
+
+        assert "photo-field" in content
+        assert "photo-field-art" in content

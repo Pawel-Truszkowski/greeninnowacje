@@ -25,14 +25,59 @@
         {% csrf_token %}
         <button type="submit" class="btn btn-water block">💧 Oznacz jako podlane</button>
       </form>
+
+      {% comment %}Care sits in the same card as watering, below the button, as in the PoC: one decision about this tree, one place.{% endcomment %}
+      <hr class="divider">
+      <div class="row between care-row">
+        <div>
+          <b>Opiekun:</b>
+          {% if is_my_tree %}
+            💚 Ty ({{ card.caretaker }})
+          {% elif has_caretaker %}
+            💚 {{ card.caretaker }}
+          {% else %}
+            <span class="no-caretaker">brak — drzewo szuka opiekuna!</span>
+          {% endif %}
+        </div>
+        {% if is_my_tree %}
+          <form method="post" action="{% url 'trees:stop-care' tree_id=card.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-ghost">Zrezygnuj z opieki</button>
+          </form>
+        {% elif not has_caretaker %}
+          <form method="post" action="{% url 'trees:take-care' tree_id=card.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary">🙋 Zostań opiekunem 💚</button>
+          </form>
+        {% endif %}
+      </div>
+      {% if is_my_tree %}
+        <p class="muted tight">Dostaniesz e-mail, gdy drzewo będzie pilnie potrzebowało wody.</p>
+      {% elif not has_caretaker %}
+        <p class="muted tight">Zgłoś się — dostaniesz e-mail, gdy drzewo będzie potrzebowało wody.</p>
+      {% endif %}
     {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Informacje</h2>
+    <dl class="kv">
+      <dt>Gatunek</dt><dd>{{ card.species }}</dd>
+      <dt>Data zasadzenia</dt><dd>{{ card.planted_on|date:"j E Y" }}</dd>
+      {% if card.planted_by %}<dt>Kto sadził</dt><dd>{{ card.planted_by }}</dd>{% endif %}
+      <dt>Opiekun</dt>
+      <dd>
+        {% if user.is_authenticated %}
+          {% if card.caretaker %}💚 {{ card.caretaker }}{% else %}🙋 Nikt — możesz się zgłosić!{% endif %}
+        {% elif card.has_caretaker %}💚 Tak — drzewo ma opiekuna{% else %}🙋 Nie — możesz się zgłosić!{% endif %}
+      </dd>
+      {% if card.notes %}<dt>Notatki</dt><dd>{{ card.notes }}</dd>{% endif %}
+    </dl>
   </div>
 
   {# Photos are for logged-in users only: a private garden shows houses and people. #}
   {% if user.is_authenticated and card.photos %}
-    {# `forloop.revcounter` numbers the oldest photo 1: the list is newest-first, so counting
-       backwards gives the order the tree actually grew in — and a new upload does not
-       renumber the ones already there. #}
+    {% comment %}`forloop.revcounter` numbers the oldest photo 1: the list is newest-first, so counting backwards gives the order the tree actually grew in — and a new upload does not renumber the ones already there.{% endcomment %}
     <div class="card" id="zdjecia">
       <h2>Zdjęcia <span class="muted">({{ card.photos|length }})</span></h2>
 
@@ -66,11 +111,12 @@
       </ul>
     </div>
 
-    {# Preview without a line of JavaScript: the overlay is shown by :target, so opening and
-       closing it is ordinary navigation — the back button closes it too. #}
+    {% comment %}Preview without a line of JavaScript: the overlay is shown by :target, so opening and closing it is ordinary navigation — the back button closes it too.{% endcomment %}
     {% for photo in card.photos %}
       <div class="lightbox" id="zdjecie-{{ photo.pk }}">
-        <a class="lightbox-close" href="#zdjecia" aria-label="Zamknij podgląd">✕</a>
+        {% comment %}Two ways out: the backdrop behind the photo, and the button. Escaping a full-screen overlay must not depend on hitting a 44 px target.{% endcomment %}
+        <a class="lightbox-backdrop" href="#zdjecia" aria-label="Zamknij podgląd" tabindex="-1"></a>
+        <a class="lightbox-close" href="#zdjecia">✕ Zamknij</a>
         <img src="{% url 'trees:photo' photo_id=photo.pk %}"
              width="{{ photo.width }}" height="{{ photo.height }}"
              alt="Zdjęcie {{ forloop.revcounter }} drzewa: {{ card.species }}">
@@ -90,47 +136,14 @@
           action="{% url 'trees:add-photo' tree_id=card.id %}">
       {% csrf_token %}
       <h2>Dodaj zdjęcie</h2>
-      <p class="muted tight">Pokaż, jak drzewo rośnie. Zdjęcie zobaczą zalogowani wolontariusze.</p>
-      {% include "includes/field.html" with field=photo_form.image %}
-      <button type="submit" class="btn btn-primary">Wyślij zdjęcie</button>
+      <label class="field photo-field" for="{{ photo_form.image.id_for_label }}">
+        <span class="photo-field-art">📷</span>
+        <span class="photo-field-title">Pokaż, jak drzewo rośnie</span>
+        <span class="optional photo-field-hint">Zdjęcie zobaczą zalogowani wolontariusze.</span>
+        {{ photo_form.image }}
+      </label>
+      <button type="submit" class="btn btn-primary block">Wyślij zdjęcie</button>
     </form>
-  {% endif %}
-
-  <div class="card">
-    <h2>Informacje</h2>
-    <dl class="kv">
-      <dt>Gatunek</dt><dd>{{ card.species }}</dd>
-      <dt>Data zasadzenia</dt><dd>{{ card.planted_on|date:"j E Y" }}</dd>
-      {% if card.planted_by %}<dt>Kto sadził</dt><dd>{{ card.planted_by }}</dd>{% endif %}
-      <dt>Opiekun</dt>
-      <dd>
-        {% if user.is_authenticated %}
-          {% if card.caretaker %}💚 {{ card.caretaker }}{% else %}🙋 Nikt — możesz się zgłosić!{% endif %}
-        {% elif card.has_caretaker %}💚 Tak — drzewo ma opiekuna{% else %}🙋 Nie — możesz się zgłosić!{% endif %}
-      </dd>
-      {% if card.notes %}<dt>Notatki</dt><dd>{{ card.notes }}</dd>{% endif %}
-    </dl>
-  </div>
-
-  {% if user.is_authenticated and card.lifecycle != "archived" %}
-    <div class="card">
-      <h2>Opieka nad drzewem</h2>
-      {% if is_my_tree %}
-        <p class="muted tight">Opiekujesz się tym drzewem. Dostaniesz e-mail, gdy będzie pilnie potrzebowało wody.</p>
-        <form method="post" action="{% url 'trees:stop-care' tree_id=card.id %}">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-ghost">Zrezygnuj z opieki</button>
-        </form>
-      {% elif has_caretaker %}
-        <p class="muted tight">Tym drzewem opiekuje się już {{ card.caretaker }}. Nadal możesz je podlać!</p>
-      {% else %}
-        <p class="muted tight">To drzewo nie ma opiekuna. Zgłoś się — dostaniesz e-mail, gdy będzie potrzebowało wody.</p>
-        <form method="post" action="{% url 'trees:take-care' tree_id=card.id %}">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-secondary">Zostań opiekunem 💚</button>
-        </form>
-      {% endif %}
-    </div>
   {% endif %}
 
   <div class="card">

@@ -537,12 +537,18 @@ table.data td {
   text-align: center;
 }
 
+/* The thumbnail sets the column width; the label wraps inside it instead of sticking out. */
+.photo-strip li { width: 84px; }
+
 .photo-remove {
   margin-top: 6px;
   width: 100%;
-  padding: 6px 8px;
+  padding: 6px 4px;
   min-height: 36px;
-  font-size: .78rem;
+  font-size: .7rem;
+  line-height: 1.15;
+  white-space: normal;
+  text-align: center;
 }
 
 /* Preview overlay driven by :target — no JavaScript, and the back button closes it. */
@@ -571,19 +577,24 @@ table.data td {
 
 .lightbox-meta { margin: 0; color: #fff; font-weight: 700; font-size: .9rem; text-align: center; }
 
+/* Covers the whole overlay, below the photo: clicking anywhere outside closes the preview. */
+.lightbox-backdrop { position: absolute; inset: 0; }
+
+.lightbox img, .lightbox-meta, .lightbox-close { position: relative; }
+
 .lightbox-close {
   position: absolute;
   top: 12px;
   right: 12px;
-  width: 44px;
-  height: 44px;
+  min-height: 44px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, .15);
+  gap: 6px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .18);
   color: #fff;
-  font-size: 1.2rem;
+  font-size: .95rem;
   font-weight: 800;
   text-decoration: none;
 }
