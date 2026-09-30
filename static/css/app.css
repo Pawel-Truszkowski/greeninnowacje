@@ -507,16 +507,85 @@ table.data td {
   list-style: none;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0 0;
+  gap: 12px;
+  margin: 14px 0 0;
   padding: 0;
 }
 
 .photo-strip img {
-  width: 72px;
-  height: 72px;
+  width: 84px;
+  height: 84px;
   object-fit: cover;
   border-radius: 8px;
+  display: block;
+}
+
+/* The number is what tells two photos of the same tree apart — same day, same plant. */
+.photo-open { position: relative; display: block; }
+
+.photo-no {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  min-width: 22px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(13, 59, 36, .82);
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.photo-remove {
+  margin-top: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  min-height: 36px;
+  font-size: .78rem;
+}
+
+/* Preview overlay driven by :target — no JavaScript, and the back button closes it. */
+.lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(13, 59, 36, .92);
+  padding: 24px 16px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.lightbox:target { display: flex; }
+
+.lightbox img {
+  max-width: 100%;
+  max-height: 78vh;
+  width: auto;
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+
+.lightbox-meta { margin: 0; color: #fff; font-weight: 700; font-size: .9rem; text-align: center; }
+
+.lightbox-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .15);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-decoration: none;
 }
 
 .photo-placeholder {

@@ -298,3 +298,104 @@ class TestJsonApi:
         tree, _ = tree_and_caretaker
 
         assert client.post(self.upload_url(tree), {"image": image_file()}).status_code == 403
+
+
+@pytest.mark.django_db
+class TestGallery:
+    """Numbering and the preview overlay on the tree card."""
+
+    @pytest.fixture
+    def three_photos(self, tree_and_caretaker):
+        """Oldest first in creation order; the card lists them newest first."""
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        tree, caretaker = tree_and_caretaker
+        photos = [add_photo(tree, caretaker, image_file()) for _ in range(3)]
+        for offset, photo in enumerate(photos):
+            TreePhoto.objects.filter(pk=photo.pk).update(
+                created_at=timezone.now() - timedelta(days=3 - offset)
+            )
+        return tree, caretaker, photos
+
+    def card(self, client, tree):
+        return client.get(reverse("trees:card", kwargs={"tree_id": tree.pk})).content.decode()
+
+    def numbers_by_photo(self, content):
+        """Map each photo id in the strip to the number shown on its thumbnail."""
+        import re
+
+        pattern = re.compile(
+            r'href="#zdjecie-(?P<pk>[0-9a-f-]+)".*?<span class="photo-no">(?P<no>\d+)</span>',
+            re.S,
+        )
+        return {match["pk"]: int(match["no"]) for match in pattern.finditer(content)}
+
+    def test_oldest_photo_is_number_one(self, client, three_photos):
+        """Chronological, so adding a photo never renumbers the ones already there.
+
+        Tied to specific photos on purpose: numbering the newest 1 would satisfy a test that
+        only looked for the digits, and would renumber the whole set on every upload.
+        """
+        tree, caretaker, photos = three_photos
+        oldest, middle, newest = photos
+        client.force_login(caretaker)
+
+        numbers = self.numbers_by_photo(self.card(client, tree))
+
+        assert numbers[str(oldest.pk)] == 1
+        assert numbers[str(middle.pk)] == 2
+        assert numbers[str(newest.pk)] == 3
+
+    def test_counts_are_shown(self, client, three_photos):
+        tree, caretaker, _ = three_photos
+        client.force_login(caretaker)
+
+        assert "Zdjęcie 3 z 3" in self.card(client, tree)
+
+    def test_every_photo_gets_its_own_number(self, client, three_photos):
+        tree, caretaker, _ = three_photos
+        client.force_login(caretaker)
+
+        content = self.card(client, tree)
+
+        for number in (1, 2, 3):
+            assert f">{number}</span>" in content, f"Brak numeru {number} na miniaturze"
+
+    def test_delete_buttons_are_told_apart(self, client, three_photos):
+        """The bug this fixes: three buttons reading „Usuń zdjęcie z 30 września 2026"."""
+        tree, caretaker, _ = three_photos
+        client.force_login(caretaker)
+
+        content = self.card(client, tree)
+
+        labels = {f"Usuń zdjęcie {number}" for number in (1, 2, 3)}
+        assert all(label in content for label in labels)
+
+    def test_each_photo_has_a_preview_target(self, client, three_photos):
+        tree, caretaker, photos = three_photos
+        client.force_login(caretaker)
+
+        content = self.card(client, tree)
+
+        for photo in photos:
+            assert f'id="zdjecie-{photo.pk}"' in content
+            assert f'href="#zdjecie-{photo.pk}"' in content
+
+    def test_preview_closes_back_to_the_gallery(self, client, three_photos):
+        tree, caretaker, _ = three_photos
+        client.force_login(caretaker)
+
+        content = self.card(client, tree)
+
+        assert 'id="zdjecia"' in content
+        assert 'href="#zdjecia"' in content
+
+    def test_public_card_has_no_preview_at_all(self, client, three_photos):
+        tree, _, _ = three_photos
+
+        content = self.card(client, tree)
+
+        assert "lightbox" not in content
+        assert "/zdjecie/" not in content

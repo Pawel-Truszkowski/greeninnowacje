@@ -30,34 +30,54 @@
 
   {# Photos are for logged-in users only: a private garden shows houses and people. #}
   {% if user.is_authenticated and card.photos %}
-    <div class="card">
-      <h2>Zdjęcia</h2>
-      {% with newest=card.photos.0 %}
-        <img class="tree-photo" src="{% url 'trees:photo' photo_id=newest.pk %}"
-             width="{{ newest.width }}" height="{{ newest.height }}"
-             alt="Zdjęcie drzewa: {{ card.species }}">
+    {# `forloop.revcounter` numbers the oldest photo 1: the list is newest-first, so counting
+       backwards gives the order the tree actually grew in — and a new upload does not
+       renumber the ones already there. #}
+    <div class="card" id="zdjecia">
+      <h2>Zdjęcia <span class="muted">({{ card.photos|length }})</span></h2>
+
+      {% with newest=card.photos.0 total=card.photos|length %}
+        <a class="photo-open" href="#zdjecie-{{ newest.pk }}">
+          <img class="tree-photo" src="{% url 'trees:photo' photo_id=newest.pk %}"
+               width="{{ newest.width }}" height="{{ newest.height }}"
+               alt="Zdjęcie {{ total }} drzewa: {{ card.species }}">
+          <span class="photo-no">{{ total }}</span>
+        </a>
+        <p class="muted tight">Najnowsze, z {{ newest.created_at|date:"j E Y" }}. Kliknij, aby powiększyć.</p>
       {% endwith %}
 
-      {% if card.photos|length > 1 %}
-        <ul class="photo-strip">
-          {% for photo in card.photos|slice:"1:" %}
-            <li>
+      <ul class="photo-strip">
+        {% for photo in card.photos %}
+          <li>
+            <a class="photo-open" href="#zdjecie-{{ photo.pk }}">
               <img src="{% url 'trees:photo' photo_id=photo.pk %}"
-                   width="{{ photo.width }}" height="{{ photo.height }}" alt="">
-            </li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-
-      {% for photo in card.photos %}
-        {% if photo.uploaded_by_id == user.id or user.is_app_admin %}
-          <form method="post" action="{% url 'trees:remove-photo' tree_id=card.id photo_id=photo.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-secondary">Usuń zdjęcie z {{ photo.created_at|date:"j E Y" }}</button>
-          </form>
-        {% endif %}
-      {% endfor %}
+                   width="{{ photo.width }}" height="{{ photo.height }}"
+                   alt="Zdjęcie {{ forloop.revcounter }} drzewa: {{ card.species }}">
+              <span class="photo-no">{{ forloop.revcounter }}</span>
+            </a>
+            {% if photo.uploaded_by_id == user.id or user.is_app_admin %}
+              <form method="post" action="{% url 'trees:remove-photo' tree_id=card.id photo_id=photo.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-ghost photo-remove">Usuń zdjęcie {{ forloop.revcounter }}</button>
+              </form>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
     </div>
+
+    {# Preview without a line of JavaScript: the overlay is shown by :target, so opening and
+       closing it is ordinary navigation — the back button closes it too. #}
+    {% for photo in card.photos %}
+      <div class="lightbox" id="zdjecie-{{ photo.pk }}">
+        <a class="lightbox-close" href="#zdjecia" aria-label="Zamknij podgląd">✕</a>
+        <img src="{% url 'trees:photo' photo_id=photo.pk %}"
+             width="{{ photo.width }}" height="{{ photo.height }}"
+             alt="Zdjęcie {{ forloop.revcounter }} drzewa: {{ card.species }}">
+        <p class="lightbox-meta">Zdjęcie {{ forloop.revcounter }} z {{ card.photos|length }}
+          · {{ photo.created_at|date:"j E Y, H:i" }}</p>
+      </div>
+    {% endfor %}
   {% else %}
     <div class="card photo-placeholder">
       <span class="art">🌳</span>

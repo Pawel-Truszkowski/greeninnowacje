@@ -38,7 +38,7 @@ class TreeRegistrationForm(forms.ModelForm):
     photo = forms.FileField(
         label="Zdjęcie drzewa",
         required=False,
-        help_text="Możesz zrobić je od razu — albo dodać później z karty drzewa.",
+        help_text="Możesz dodać je od razu — albo później z karty drzewa.",
         widget=forms.ClearableFileInput(attrs=PHOTO_INPUT_ATTRS),
     )
 
