@@ -345,42 +345,6 @@ textarea { min-height: 84px; resize: vertical; }
 
 /* ---------- weather chart (CSS bars) ---------- */
 
-.weather-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  height: 90px;
-  padding-top: 8px;
-}
-
-.weather-chart .bar {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-}
-
-.weather-chart .bar i {
-  display: block;
-  width: 100%;
-  max-width: 22px;
-  background: linear-gradient(180deg, #64b5f6, #1976d2);
-  border-radius: 4px 4px 0 0;
-  min-height: 2px;
-}
-
-.weather-chart .bar.dry i { background: var(--line); }
-
-.weather-chart .bar b {
-  font-size: .6rem;
-  font-weight: 700;
-  color: var(--ink-soft);
-  white-space: nowrap;
-}
-
 /* ---------- tables (admin) ---------- */
 
 .table-wrap { overflow-x: auto; }
@@ -867,14 +831,31 @@ input[aria-invalid="true"] { border-color: var(--urgent); }
 
 /* ---------- weather chart (SVG: heights are attributes, CSP-safe) ---------- */
 
-.weather-svg { width: 100%; height: auto; overflow: visible; }
-.weather-svg .bar { fill: #64b5f6; }
+.weather-chart { padding-top: 8px; }
+
+/* preserveAspectRatio="none": the bars stretch to the card width, so the label list below
+   lines up with them at every screen size without measuring anything. */
+.weather-svg { display: block; width: 100%; height: 90px; }
+.weather-svg .bar { fill: url(#rain-gradient); }
 .weather-svg .bar-dry { fill: var(--line); }
 .weather-svg .bar-missing { fill: #cfc8b4; opacity: .6; }
-.weather-svg .bar-label {
-  font-size: 9px;
+
+/* Dates as HTML, not SVG <text>: they keep their size when the chart is scaled down. */
+.weather-labels {
+  display: flex;
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+
+.weather-labels li {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: .6rem;
   font-weight: 700;
-  fill: var(--ink-soft);
+  color: var(--ink-soft);
+  white-space: nowrap;
 }
 
 .qr-box .qr-frame { background: #fff; }

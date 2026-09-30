@@ -1,12 +1,20 @@
-<svg class="weather-svg" viewBox="0 0 {{ width }} {{ label_y|add:4 }}" role="img"
-     aria-label="Opady w ostatnich dniach">
-  {% for bar in bars %}
-    <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}" rx="3"
-          class="bar{% if bar.missing %} bar-missing{% elif bar.dry %} bar-dry{% endif %}">
-      <title>{{ bar.label|date:"j E" }}: {% if bar.missing %}brak danych{% else %}{{ bar.value }} mm{% endif %}</title>
-    </rect>
-    {% comment %}Rotation as an SVG attribute, not CSS: Safari on iOS does not reliably honour transform-box: fill-box, and rotates every label around the chart's origin instead of its own box — the labels fan out diagonally.{% endcomment %}
-    <text x="{{ bar.label_x }}" y="{{ label_y }}" class="bar-label" text-anchor="end"
-          transform="rotate(-45 {{ bar.label_x }} {{ label_y }})">{{ bar.label|date:"d.m" }}</text>
-  {% endfor %}
-</svg>
+<div class="weather-chart">
+  <svg class="weather-svg" viewBox="0 0 {{ width }} {{ chart_height }}" preserveAspectRatio="none"
+       role="img" aria-label="Opady w ostatnich dniach">
+    <defs>
+      <linearGradient id="rain-gradient" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#64b5f6"/>
+        <stop offset="100%" stop-color="#1976d2"/>
+      </linearGradient>
+    </defs>
+    {% for bar in bars %}
+      <path d="{{ bar.path }}"
+            class="bar{% if bar.missing %} bar-missing{% elif bar.dry %} bar-dry{% endif %}">
+        <title>{{ bar.label|date:"j E" }}: {% if bar.missing %}brak danych{% else %}{{ bar.value }} mm{% endif %}</title>
+      </path>
+    {% endfor %}
+  </svg>
+  <ul class="weather-labels">
+    {% for bar in bars %}<li>{{ bar.label|date:"d.m" }}</li>{% endfor %}
+  </ul>
+</div>
