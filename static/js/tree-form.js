@@ -48,6 +48,42 @@
     if (accuracy !== undefined) accuracyInput.value = Math.round(accuracy * 10) / 10;
   }
 
+  /* Locality hint (PoC: „miejscowość wykryta automatycznie"). Best-effort: every failure
+   * leaves the sentence that is already in the HTML, because the server decides the real
+   * locality when the tree is saved. */
+  var hintEl = document.getElementById('locality-hint');
+  var hintUrl = hintEl.parentNode.dataset.hintUrl;
+  var hintFallback = hintEl.textContent;
+  var hintTimer = null;
+  var hintRequest = null;
+  // Slightly above the server's one-second OSM window on purpose: two asks in a row must not
+  // land inside it, or the second answers "no name" and the line falls back to its fallback.
+  var HINT_DELAY_MS = 1100;
+
+  function askForLocality(lat, lng) {
+    // Dragging a pin fires continuously; one question after the hand stops, not ten.
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(function () {
+      if (hintRequest) hintRequest.abort();
+      hintRequest = new AbortController();
+      fetch(hintUrl + '?lat=' + round6(lat) + '&lng=' + round6(lng), {
+        signal: hintRequest.signal,
+        headers: { Accept: 'application/json' },
+      })
+        .then(function (response) {
+          return response.ok ? response.json() : null;
+        })
+        .then(function (data) {
+          hintEl.textContent = data && data.locality
+            ? 'miejscowość wykryta automatycznie: ' + data.locality
+            : hintFallback;
+        })
+        .catch(function () {
+          /* Aborted, offline or rate limited — the fallback sentence stays. */
+        });
+    }, HINT_DELAY_MS);
+  }
+
   // Keep a previously entered position (e.g. after a validation error or duplicate check).
   if (latInput.value && lngInput.value) {
     var saved = [parseFloat(latInput.value), parseFloat(lngInput.value)];
@@ -58,6 +94,7 @@
       ? 'dokładność: ±' + Math.round(parseFloat(accuracyInput.value)) + ' m'
       : 'pozycja ustawiona ręcznie';
     statusEl.textContent = 'Lokalizacja z poprzedniej próby — sprawdź pinezkę.';
+    askForLocality(saved[0], saved[1]);
   } else if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       function (position) {
@@ -66,6 +103,7 @@
         map.setView([coords.latitude, coords.longitude], 19);
         accuracyEl.textContent = 'dokładność: ±' + Math.round(coords.accuracy) + ' m';
         statusEl.textContent = '';
+        askForLocality(coords.latitude, coords.longitude);
       },
       function () {
         accuracyEl.textContent = 'brak zgody na GPS';
@@ -86,6 +124,7 @@
     setPosition(lat, lng);
     accuracyEl.textContent = 'pozycja ustawiona ręcznie';
     statusEl.textContent = '';
+    askForLocality(lat, lng);
   }
 
   marker.on('dragend', function () {

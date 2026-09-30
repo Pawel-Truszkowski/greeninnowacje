@@ -25,6 +25,7 @@ urlpatterns = [
 api_urlpatterns = [
     path("", api.tree_list, name="list"),
     path("nowe", api.tree_create, name="create"),
+    path("locality", api.locality_hint, name="locality-hint"),
     path("<uuid:tree_id>", api.tree_extended_card, name="detail"),
     path("<uuid:tree_id>/public", api.tree_public_card, name="public"),
     path("<uuid:tree_id>/qr.png", api.tree_qr, name="qr"),

@@ -205,7 +205,7 @@ class TestRegistrationUsesGeocoder:
     @respx.mock
     def test_locality_comes_from_nominatim(self, client, volunteer, monkeypatch):
         monkeypatch.undo()  # drop the autouse stub, use the real reverse_locality
-        monkeypatch.setattr("trees.nominatim._wait_for_slot", lambda: None)
+        monkeypatch.setattr("trees.nominatim._wait_for_slot", lambda wait=True: True)
         respx.get(url__startswith="https://nominatim.openstreetmap.org/reverse").mock(
             return_value=httpx.Response(200, json={"address": {"village": "Studzieniec"}})
         )
@@ -338,6 +338,18 @@ class TestRegistrationScreenTexts:
         content = client.get(PAGE_URL).content.decode()
 
         assert '<main class="page">' in content
+
+    def test_locality_hint_has_a_fallback_in_the_html(self, client, volunteer):
+        """Without JavaScript the line still reads sensibly — the hint only replaces it."""
+        content = client.get(PAGE_URL).content.decode()
+
+        assert 'id="locality-hint"' in content
+        assert "miejscowość ustalimy automatycznie" in content
+
+    def test_page_points_the_script_at_the_hint_endpoint(self, client, volunteer):
+        content = client.get(PAGE_URL).content.decode()
+
+        assert reverse("trees-api:locality-hint") in content
 
     def test_photo_field_is_offered(self, client, volunteer):
         content = client.get(PAGE_URL).content.decode()

@@ -27,6 +27,8 @@ ENDPOINTS = [
     ("post", "auth-api:api-logout", {}, {"anonymous": 204, "volunteer": 204, "admin": 204}),
     ("get", "trees-api:list", {}, {"anonymous": 200, "volunteer": 200, "admin": 200}),
     ("get", "me-api:trees", {}, {"anonymous": 403, "volunteer": 200, "admin": 200}),
+    # 400: no coordinates — the point is that anonymous users never reach the geocoder.
+    ("get", "trees-api:locality-hint", {}, {"anonymous": 403, "volunteer": 400, "admin": 400}),
     ("get", "trees:my", {}, {"anonymous": 302, "volunteer": 200, "admin": 200}),
     ("get", "trees:register", {}, {"anonymous": 302, "volunteer": 200, "admin": 200}),
     # 400: empty payload — the point is that anonymous users never get that far.

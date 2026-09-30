@@ -9,7 +9,7 @@ from trees.nominatim import reverse_locality
 
 @pytest.fixture(autouse=True)
 def no_throttle(monkeypatch):
-    monkeypatch.setattr("trees.nominatim._wait_for_slot", lambda: None)
+    monkeypatch.setattr("trees.nominatim._wait_for_slot", lambda wait=True: True)
 
 
 def address(**fields):

@@ -1,6 +1,7 @@
 """Public tree endpoints (spec §4) — no login, no personal data."""
 
 import math
+from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -26,8 +27,10 @@ from accounts.permissions import IsVolunteer
 from core.ratelimit import rate_limit
 
 from .forms import TreeRegistrationForm
+from .geo import is_in_poland
 from .images import InvalidImage
 from .models import Tree, TreePhoto
+from .nominatim import reverse_locality
 from .qr import qr_png, tree_card_url
 from .selectors import extended_tree_card, map_tree_payload, map_trees, public_tree_card
 from .services import (
@@ -246,6 +249,36 @@ def tree_create(request):
         },
         status=HTTP_201_CREATED,
     )
+
+
+def _requested_point(params):
+    """`lat`/`lng` from the query string, checked the same way the form checks them."""
+    try:
+        lat, lng = Decimal(params["lat"]), Decimal(params["lng"])
+    except (KeyError, InvalidOperation) as error:
+        raise ValidationError("Podaj parametry lat i lng.") from error
+    if not is_in_poland(lat, lng):
+        raise ValidationError("Współrzędne wyglądają na spoza Polski.")
+    return lat, lng
+
+
+@api_view(["GET"])
+@permission_classes([IsVolunteer])
+# `methods` is not optional here: the decorator defaults to POST only, and a GET endpoint
+# would silently keep `request.limited` False — a limiter that never limits.
+@rate_limit("geocode", lambda: settings.GEOCODE_RATE_LIMIT, key="user", methods=("GET",))
+def locality_hint(request):
+    """Best-effort locality name for the registration form (PoC: „wykryta automatycznie").
+
+    A hint, never a decision: the tree's locality is still resolved at save time. So no name
+    is a normal answer with status 200 — a geocoder that is down, silent or merely busy must
+    not look like a failure. `wait=False` is what keeps this from holding a worker for a
+    second while the OSM rate window passes.
+    """
+    if request.limited:
+        raise Throttled(detail="Za dużo zapytań o miejscowość. Spróbuj za chwilę.")
+    lat, lng = _requested_point(request.query_params)
+    return Response({"locality": reverse_locality(lat, lng, wait=False)})
 
 
 @api_view(["POST"])

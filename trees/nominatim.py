@@ -22,18 +22,31 @@ _throttle_lock = threading.Lock()
 _last_call_at = 0.0
 
 
-def _wait_for_slot():
+def _wait_for_slot(wait=True):
+    """Claim the next slot under OSM's one-request-per-second rule.
+
+    Returns False when the slot is busy and `wait` is False — the caller then makes no
+    request at all, which is how the registration form asks without holding a worker.
+    """
     global _last_call_at
     with _throttle_lock:
-        wait = MIN_INTERVAL_S - (time.monotonic() - _last_call_at)
-        if wait > 0:
-            time.sleep(wait)
+        remaining = MIN_INTERVAL_S - (time.monotonic() - _last_call_at)
+        if remaining > 0:
+            if not wait:
+                return False
+            time.sleep(remaining)
         _last_call_at = time.monotonic()
+        return True
 
 
-def reverse_locality(lat, lng):
-    """Return the locality name for the coordinates, or None when it cannot be found."""
-    _wait_for_slot()
+def reverse_locality(lat, lng, wait=True):
+    """Return the locality name for the coordinates, or None when it cannot be found.
+
+    `wait=False` gives up instead of sleeping for a free slot. Registration keeps the
+    default: there the name is actually needed, and the call happens once.
+    """
+    if not _wait_for_slot(wait):
+        return None
     params = {
         "lat": str(lat),
         "lon": str(lng),

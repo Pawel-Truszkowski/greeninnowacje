@@ -37,8 +37,10 @@
       </div>
       <div id="pick-map" class="pick-map"
            data-tiles-url="{{ map_config.tilesUrl }}" data-attribution="{{ map_config.attribution }}"></div>
-      <p class="muted gps-status">📍 <span id="coords">pobieram lokalizację…</span> ·
-        miejscowość ustalimy automatycznie z lokalizacji</p>
+      {# The fallback text is in the HTML, so the line reads sensibly without JavaScript. #}
+      <p class="muted gps-status" data-hint-url="{% url 'trees-api:locality-hint' %}">
+        📍 <span id="coords">pobieram lokalizację…</span> ·
+        <span id="locality-hint">miejscowość ustalimy automatycznie z lokalizacji</span></p>
       <p class="muted gps-status" id="gps-status"></p>
       {{ form.lat }}{{ form.lng }}{{ form.gps_accuracy_m }}
 
