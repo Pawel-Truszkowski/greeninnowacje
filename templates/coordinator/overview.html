@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load trees_tags %}
+{% block title %}Przegląd obszaru{% endblock %}
+
+{% block content %}
+<main class="page wide">
+  {% include "includes/logged_in_pill.html" %}
+
+  {% if localities %}
+    <h1>Przegląd obszaru: {% for locality in localities %}{{ locality.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</h1>
+  {% else %}
+    <h1>Przegląd obszaru</h1>
+    <p class="notice">Brak przypisanej miejscowości. Poproś administratora o przypisanie obszaru —
+      wtedy zobaczysz tu drzewa i wolontariuszy.</p>
+  {% endif %}
+
+  {% if localities %}
+    <div class="stat-grid">
+      <div class="stat"><div class="num">{{ stats.trees_total }}</div><div class="lbl">🌳 drzew w obszarze</div></div>
+      <div class="stat"><div class="num urgent">{{ stats.by_status.URGENT }}</div><div class="lbl">🔴 pilne</div></div>
+      <div class="stat"><div class="num soon">{{ stats.by_status.SOON }}</div><div class="lbl">🟠 wkrótce</div></div>
+      <div class="stat"><div class="num soon">{{ stats.without_caretaker }}</div><div class="lbl">⚠️ bez opiekuna</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Drzewa w obszarze — najpilniejsze na górze</h2>
+      {% for tree in trees %}
+        {% include "panel/includes/tree_row.html" with tree=tree %}
+      {% empty %}
+        <p class="muted">W tym obszarze nie ma jeszcze drzew.</p>
+      {% endfor %}
+    </div>
+
+    <div class="card">
+      <h2>Wolontariusze w obszarze</h2>
+      {% if volunteers %}
+        <div class="table-wrap">
+          <table class="data">
+            <thead>
+              <tr><th>Wolontariusz</th><th>Drzewa pod opieką</th><th>Podlania (30 dni)</th><th>Ostatnia aktywność</th></tr>
+            </thead>
+            <tbody>
+              {% for row in volunteers %}
+                <tr>
+                  <td data-label="Wolontariusz">{{ row.display_name }}</td>
+                  <td data-label="Drzewa pod opieką">{{ row.trees }}</td>
+                  <td data-label="Podlania (30 dni)">{{ row.waterings_30 }}</td>
+                  <td data-label="Ostatnia aktywność">
+                    {% if row.last_activity %}{{ row.last_activity|date:"j E Y" }}{% else %}—{% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="muted">Żadne drzewo w obszarze nie ma jeszcze opiekuna.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+</main>
+{% endblock %}

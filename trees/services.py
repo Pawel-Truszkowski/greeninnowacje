@@ -10,7 +10,7 @@ from collections import Counter
 from dataclasses import dataclass
 
 from django.db import IntegrityError, transaction
-from django.db.models import BooleanField, Case, F, IntegerField, Max, Value, When
+from django.db.models import BooleanField, F, Max, Value
 from django.utils import timezone
 
 from core.models import load_drought_config
@@ -20,7 +20,7 @@ from .geo import DUPLICATE_RADIUS_M, bbox_around, haversine_m
 from .images import process_upload
 from .models import Assignment, Locality, Tree, TreePhoto, Watering
 from .nominatim import reverse_locality
-from .selectors import last_finished_day, weather_series
+from .selectors import by_urgency, last_finished_day, weather_series
 from .status import StatusInputs, compute_status, missing_rain_days
 
 logger = logging.getLogger(__name__)
@@ -118,12 +118,6 @@ def caretaker_of(tree):
 
 def my_trees(user):
     """Trees the user looks after: most urgent first, then longest unwatered (spec §4)."""
-    status_rank = Case(
-        When(status=Tree.Status.URGENT, then=Value(0)),
-        When(status=Tree.Status.SOON, then=Value(1)),
-        default=Value(2),
-        output_field=IntegerField(),
-    )
     return (
         Tree.objects.filter(
             assignments__user=user,
@@ -132,7 +126,7 @@ def my_trees(user):
         )
         .select_related("locality")
         .annotate(
-            status_rank=status_rank,
+            status_rank=by_urgency(),
             last_watered_at=Max("waterings__watered_at"),
             # By definition every tree in this list has an active caretaker: the user.
             has_caretaker=Value(True, output_field=BooleanField()),

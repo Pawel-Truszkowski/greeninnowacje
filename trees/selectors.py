@@ -7,7 +7,7 @@ Both the HTML card and GET /api/trees/{id}/public render its output.
 
 from datetime import timedelta
 
-from django.db.models import BooleanField, Exists, Max, OuterRef, Value
+from django.db.models import BooleanField, Case, Exists, IntegerField, Max, OuterRef, Value, When
 from django.utils import timezone
 
 from core.models import load_drought_config
@@ -157,3 +157,17 @@ def active_species_names():
     (trees keep their names) but disappear from the choices.
     """
     return list(TreeSpecies.objects.filter(is_active=True).values_list("name", flat=True))
+
+
+def by_urgency():
+    """Sort key for „most urgent first" (spec §4): URGENT, then SOON, then the rest.
+
+    Shared by „Moje drzewa" and the coordinator's area list — two copies of this would drift
+    the moment a status is added.
+    """
+    return Case(
+        When(status=Tree.Status.URGENT, then=Value(0)),
+        When(status=Tree.Status.SOON, then=Value(1)),
+        default=Value(2),
+        output_field=IntegerField(),
+    )

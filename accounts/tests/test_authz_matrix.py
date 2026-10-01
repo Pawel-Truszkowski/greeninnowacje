@@ -163,6 +163,13 @@ ENDPOINTS = [
         {},
         {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
     ),
+    # The area screens: a coordinator's own ground, an admin supervises, nobody else.
+    (
+        "get",
+        "coordinator:overview",
+        {},
+        {"anonymous": 302, "volunteer": 403, "coordinator": 200, "admin": 200},
+    ),
 ]
 
 # Same, for endpoints that need an existing tree (kwargs built per test).

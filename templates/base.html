@@ -27,6 +27,10 @@
       <a href="{{ register_url }}" {% if request.path == register_url %}class="active" aria-current="page"{% endif %}>+ Drzewo</a>
       {% url 'trees:my' as my_url %}
       <a href="{{ my_url }}" {% if request.path == my_url %}class="active" aria-current="page"{% endif %}>Moje drzewa</a>
+      {% if user.role == 'coordinator' or user.is_app_admin %}
+        {% url 'coordinator:overview' as area_url %}
+        <a href="{{ area_url }}" {% if request.path == area_url %}class="active" aria-current="page"{% endif %}>Obszar</a>
+      {% endif %}
       {% if user.is_app_admin %}
         {% url 'panel:dashboard' as admin_url %}
         <a href="{{ admin_url }}" {% if request.path == admin_url %}class="active" aria-current="page"{% endif %}>Admin</a>

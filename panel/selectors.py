@@ -21,12 +21,28 @@ def _active_assignment():
     return Assignment.objects.filter(tree=OuterRef("pk"), ended_at__isnull=True)
 
 
-def dashboard_stats(today=None):
+def dashboard_stats(today=None, locality_ids=None):
+    """Numbers for a dashboard. Without `locality_ids` the whole organisation, as before.
+
+    `locality_ids=[]` is not the same as `None`: an empty list means a coordinator with no
+    area assigned, and they must see zeros rather than everything.
+    """
     today = today or timezone.localdate()
     week_ago = timezone.now() - timedelta(days=RECENT_DAYS)
     month_ago = timezone.now() - timedelta(days=ACTIVITY_DAYS)
 
     active_trees = Tree.objects.filter(lifecycle=Tree.Lifecycle.ACTIVE)
+    archived_trees = Tree.objects.filter(lifecycle=Tree.Lifecycle.ARCHIVED)
+    waterings = Watering.objects.all()
+    volunteers = User.objects.filter(is_active=True)
+    if locality_ids is not None:
+        active_trees = active_trees.filter(locality_id__in=locality_ids)
+        archived_trees = archived_trees.filter(locality_id__in=locality_ids)
+        waterings = waterings.filter(tree__locality_id__in=locality_ids)
+        volunteers = volunteers.filter(
+            assignments__ended_at__isnull=True,
+            assignments__tree__locality_id__in=locality_ids,
+        ).distinct()
     by_status = dict(
         active_trees.values_list("status")
         .annotate(total=Count("id"))
@@ -50,15 +66,13 @@ def dashboard_stats(today=None):
 
     return {
         "trees_total": active_trees.count(),
-        "trees_archived": Tree.objects.filter(lifecycle=Tree.Lifecycle.ARCHIVED).count(),
+        "trees_archived": archived_trees.count(),
         "by_status": {status: by_status.get(status, 0) for status in Tree.Status.values},
         "localities": localities,
-        "waterings_7": Watering.objects.filter(watered_at__gte=week_ago).count(),
-        "waterings_30": Watering.objects.filter(watered_at__gte=month_ago).count(),
-        "volunteers_total": User.objects.filter(is_active=True).count(),
-        "volunteers_active": User.objects.filter(
-            is_active=True, waterings__watered_at__gte=month_ago
-        )
+        "waterings_7": waterings.filter(watered_at__gte=week_ago).count(),
+        "waterings_30": waterings.filter(watered_at__gte=month_ago).count(),
+        "volunteers_total": volunteers.count(),
+        "volunteers_active": volunteers.filter(waterings__watered_at__gte=month_ago)
         .distinct()
         .count(),
         "without_caretaker": without_caretaker.count(),

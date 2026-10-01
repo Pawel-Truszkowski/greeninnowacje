@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "weather",
     "notifications",
     "panel",
+    "coordinator",
 ]
 
 MIDDLEWARE = [
