@@ -1,0 +1,31 @@
+{% load trees_tags %}
+{% comment %}The tree and the action it offers are one card: a control floating between two rows reads as belonging to the wrong one.{% endcomment %}
+<div class="tree-item area-tree st-{{ tree.status }}">
+  <div class="info">
+    <a href="{% url 'trees:card' tree_id=tree.pk %}">{{ tree.species }}</a>
+    <div class="meta">
+      📍 {{ tree.locality.name }} ·
+      {% if tree.has_caretaker %}💚 {{ tree.caretaker_name }}{% else %}<b class="soon">bez opiekuna</b>{% endif %}
+    </div>
+
+    {% if tree.has_caretaker %}
+      <form method="post" action="{% url 'coordinator:release' tree_id=tree.pk %}" class="area-action">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-ghost">Zwolnij: {{ tree.caretaker_name }}</button>
+      </form>
+    {% else %}
+      <form method="post" action="{% url 'coordinator:assign' tree_id=tree.pk %}" class="area-action">
+        {% csrf_token %}
+        <label class="visually-hidden" for="volunteer-{{ tree.pk }}">Opiekun dla: {{ tree.species }}</label>
+        <select id="volunteer-{{ tree.pk }}" name="volunteer">
+          <option value="">— wybierz opiekuna dla tego drzewa —</option>
+          {% for person in assignable %}
+            <option value="{{ person.pk }}">{{ person.display_name }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-secondary">Przypisz</button>
+      </form>
+    {% endif %}
+  </div>
+  {% status_badge tree.status %}
+</div>

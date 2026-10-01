@@ -1093,17 +1093,21 @@ input[type="date"] {
 
 /* ---------- coordinator area (Etap 2) ---------- */
 
-.area-tree { margin-bottom: 14px; }
+/* The action belongs inside the tree's own card, so the status stripe encloses both and
+   nothing floats between two rows looking like it belongs to the wrong one. */
+.area-tree { align-items: flex-start; }
+.area-tree .info { flex: 1; min-width: 0; }
 
 .area-action {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin: 6px 0 0 12px;
+  margin-top: 10px;
 }
 
-.area-action select { width: auto; min-width: 180px; flex: 1 1 180px; }
+.area-action select { width: auto; min-width: 200px; flex: 1 1 200px; margin-top: 0; }
+.area-action .btn { min-height: 44px; }
 
 /* Label kept for screen readers; the select is self-evident on screen. */
 .visually-hidden {

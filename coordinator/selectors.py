@@ -7,7 +7,7 @@ somebody else's locality is the failure this whole app exists to prevent.
 
 from datetime import timedelta
 
-from django.db.models import Count, Max, OuterRef, Q, Subquery
+from django.db.models import Count, Exists, Max, OuterRef, Q, Subquery
 from django.utils import timezone
 
 from accounts.models import User
@@ -15,6 +15,10 @@ from accounts.permissions import coordinator_localities
 from panel.selectors import ACTIVITY_DAYS, dashboard_stats
 from trees.models import Assignment, Tree
 from trees.selectors import by_urgency
+
+
+def _active_assignment():
+    return Assignment.objects.filter(tree=OuterRef("pk"), ended_at__isnull=True)
 
 
 def area_trees(user):
@@ -30,11 +34,8 @@ def area_trees(user):
             last_watered_at=Max("waterings__watered_at"),
             # The row shows the caretaker and decides which action to offer; a subquery keeps
             # that at one query however long the list gets.
-            caretaker_name=Subquery(
-                Assignment.objects.filter(tree=OuterRef("pk"), ended_at__isnull=True).values(
-                    "user__display_name"
-                )[:1]
-            ),
+            has_caretaker=Exists(_active_assignment()),
+            caretaker_name=Subquery(_active_assignment().values("user__display_name")[:1]),
         )
         # Never watered sorts first inside a status — it is the most urgent case there, and
         # PostgreSQL would otherwise push those NULLs to the end.

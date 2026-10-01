@@ -157,3 +157,65 @@ class TestControlsOnTheOverview:
         client.force_login(coordinator)
 
         assert "Zablokowany" not in client.get(OVERVIEW).content.decode()
+
+
+@pytest.mark.django_db
+class TestWhatTheRowSays:
+    """The row said „bez opiekuna" under every tree, including the ones that had one.
+
+    Nothing caught it: the shared partial reads `tree.has_caretaker`, the area query never set
+    it, and Django renders a missing variable as empty rather than failing. The earlier tests
+    only checked which form appeared, so they stayed green while the text lied.
+    """
+
+    def tree_list(self, client, coordinator):
+        """Just the list — „bez opiekuna" is also a stat tile label further up the page."""
+        client.force_login(coordinator)
+        content = client.get(OVERVIEW).content.decode()
+        start = content.index("Drzewa w obszarze")
+        return content[start : content.index("Wolontariusze w obszarze", start)]
+
+    def test_a_tended_tree_names_its_caretaker(self, client, area):
+        coordinator, mine, _ = area
+        assign(TreeFactory(locality=mine), UserFactory(display_name="Piotr Nowak"))
+
+        listing = self.tree_list(client, coordinator)
+
+        assert "Piotr Nowak" in listing
+        assert "bez opiekuna" not in listing
+
+    def test_an_unattended_tree_says_so(self, client, area):
+        coordinator, mine, _ = area
+        TreeFactory(locality=mine)
+
+        assert "bez opiekuna" in self.tree_list(client, coordinator)
+
+    def test_both_kinds_side_by_side(self, client, area):
+        """The mixed case is where the bug showed: one label for every row."""
+        coordinator, mine, _ = area
+        assign(TreeFactory(locality=mine, species="Klon"), UserFactory(display_name="Ewa"))
+        TreeFactory(locality=mine, species="Dąb")
+
+        listing = self.tree_list(client, coordinator)
+
+        assert listing.count("bez opiekuna") == 1, "Dokładnie jedno drzewo jest bez opiekuna"
+        assert "Ewa" in listing
+
+    def test_the_action_sits_inside_the_tree_card(self, client, area):
+        """A control floating between two rows reads as belonging to the wrong tree."""
+        coordinator, mine, _ = area
+        tree = TreeFactory(locality=mine)
+        other = TreeFactory(locality=mine)
+
+        # One chunk per card: the form has to land in the chunk of the tree it belongs to.
+        cards = self.tree_list(client, coordinator).split("tree-item area-tree")[1:]
+        mine_card = next(card for card in cards if str(tree.pk) in card)
+
+        assert assign_url(tree) in mine_card
+        assert assign_url(other) not in mine_card, "Akcja należy do jednej karty, nie do dwóch"
+
+    def test_select_names_the_tree_for_screen_readers(self, client, area):
+        coordinator, mine, _ = area
+        TreeFactory(locality=mine, species="Jabłoń – Ligol")
+
+        assert "Opiekun dla: Jabłoń – Ligol" in self.tree_list(client, coordinator)
