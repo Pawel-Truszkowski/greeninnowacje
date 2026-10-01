@@ -13,6 +13,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import BooleanField, F, Max, Value
 from django.utils import timezone
 
+from accounts.permissions import coordinator_localities
 from core.models import load_drought_config
 from weather.services import backfill_locality
 
@@ -104,6 +105,52 @@ def assign_caretaker(tree, user):
 def release_caretaker(tree, user):
     """End this user's own active assignment. Returns True if there was one."""
     updated = Assignment.objects.filter(tree=tree, user=user, ended_at__isnull=True).update(
+        ended_at=timezone.now()
+    )
+    return bool(updated)
+
+
+class OutsideArea(Exception):
+    """This tree is not in the coordinator's localities. Message reaches the user, so PL."""
+
+
+def _require_area(tree, by):
+    """The check that makes „nadzór nad obszarem" mean something. Admins pass everywhere."""
+    if not coordinator_localities(by).filter(pk=tree.locality_id).exists():
+        raise OutsideArea("To drzewo jest poza Twoim obszarem.")
+
+
+def assign_caretaker_for(tree, volunteer, by):
+    """A coordinator puts `volunteer` in charge of `tree` (architecture doc §3).
+
+    Different from `assign_caretaker`, where a volunteer takes a tree themselves: here one
+    person commits another, so the scope check is the whole point and it belongs here rather
+    than in the view — the API and the page must not be able to disagree about it.
+
+    Raises `OutsideArea` when `tree.locality` is not in `coordinator_localities(by)`, and
+    `CaretakerConflict` when the tree already has somebody. Reassigning is deliberately two
+    steps: taking a tree away from a volunteer should be a decision, not a side effect.
+
+    The `ValueError`s below are guards against a caller that skipped its own checks; the view
+    resolves both objects with `get_object_or_404`, so a crafted id is a 404 long before this.
+    """
+    _require_area(tree, by)
+    if tree.lifecycle != Tree.Lifecycle.ACTIVE:
+        raise ValueError("Nie można przypisać opiekuna do zarchiwizowanego drzewa.")
+    if not volunteer.is_active:
+        raise ValueError("Konto wolontariusza jest nieaktywne.")
+    return assign_caretaker(tree, volunteer)
+
+
+def release_caretaker_of(tree, by):
+    """A coordinator ends whoever's assignment on `tree`. Returns True if there was one.
+
+    `release_caretaker` only ever ends the caller's own; this one reaches anybody's, which is
+    why it checks the area. The row stays with `ended_at` set — the history of who looked
+    after what is never deleted (spec §3).
+    """
+    _require_area(tree, by)
+    updated = Assignment.objects.filter(tree=tree, ended_at__isnull=True).update(
         ended_at=timezone.now()
     )
     return bool(updated)

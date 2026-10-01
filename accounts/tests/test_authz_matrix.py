@@ -172,6 +172,20 @@ ENDPOINTS = [
     ),
 ]
 
+# Area actions need a tree id; the point of the row is who is stopped before the body matters.
+COORDINATOR_TREE_ENDPOINTS = [
+    (
+        "post",
+        "coordinator:assign",
+        {"anonymous": 302, "volunteer": 403, "coordinator": 302, "admin": 302},
+    ),
+    (
+        "post",
+        "coordinator:release",
+        {"anonymous": 302, "volunteer": 403, "coordinator": 302, "admin": 302},
+    ),
+]
+
 # Same, for endpoints that need an existing tree (kwargs built per test).
 TREE_ENDPOINTS = [
     ("get", "trees:card", {"anonymous": 200, "volunteer": 200, "coordinator": 200, "admin": 200}),
@@ -248,6 +262,17 @@ def client_as(client):
 def test_endpoint_access(client_as, role, method, name, kwargs, expected):
     response = getattr(client_as(role), method)(reverse(name, kwargs=kwargs))
     assert response.status_code == expected[role]
+
+
+@pytest.mark.parametrize("role", ROLES)
+@pytest.mark.parametrize(
+    ("method", "name", "expected"),
+    COORDINATOR_TREE_ENDPOINTS,
+    ids=[f"{m.upper()} {n}" for m, n, *_ in COORDINATOR_TREE_ENDPOINTS],
+)
+def test_coordinator_tree_endpoint_access(client_as, tree, role, method, name, expected):
+    url = reverse(name, kwargs={"tree_id": tree.pk})
+    assert getattr(client_as(role), method)(url).status_code == expected[role]
 
 
 @pytest.mark.parametrize("role", ROLES)

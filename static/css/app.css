@@ -1090,3 +1090,29 @@ input[type="date"] {
   min-width: 0;
   max-width: 100%;
 }
+
+/* ---------- coordinator area (Etap 2) ---------- */
+
+.area-tree { margin-bottom: 14px; }
+
+.area-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0 12px;
+}
+
+.area-action select { width: auto; min-width: 180px; flex: 1 1 180px; }
+
+/* Label kept for screen readers; the select is self-evident on screen. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

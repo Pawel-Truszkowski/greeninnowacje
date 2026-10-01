@@ -25,7 +25,29 @@
     <div class="card">
       <h2>Drzewa w obszarze — najpilniejsze na górze</h2>
       {% for tree in trees %}
-        {% include "panel/includes/tree_row.html" with tree=tree %}
+        <div class="area-tree">
+          {% include "panel/includes/tree_row.html" with tree=tree %}
+          {% comment %}Only the action that can succeed: offering „przypisz" on a tree that already has somebody would just produce an error message.{% endcomment %}
+          {% if tree.caretaker_name %}
+            <form method="post" action="{% url 'coordinator:release' tree_id=tree.pk %}" class="area-action">
+              {% csrf_token %}
+              <span class="muted">💚 {{ tree.caretaker_name }}</span>
+              <button type="submit" class="btn btn-ghost">Zwolnij</button>
+            </form>
+          {% else %}
+            <form method="post" action="{% url 'coordinator:assign' tree_id=tree.pk %}" class="area-action">
+              {% csrf_token %}
+              <label class="visually-hidden" for="volunteer-{{ tree.pk }}">Wolontariusz</label>
+              <select id="volunteer-{{ tree.pk }}" name="volunteer">
+                <option value="">— wybierz wolontariusza —</option>
+                {% for person in assignable %}
+                  <option value="{{ person.pk }}">{{ person.display_name }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-secondary">Przypisz</button>
+            </form>
+          {% endif %}
+        </div>
       {% empty %}
         <p class="muted">W tym obszarze nie ma jeszcze drzew.</p>
       {% endfor %}
