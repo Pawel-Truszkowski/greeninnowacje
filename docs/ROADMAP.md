@@ -102,13 +102,14 @@ Kalibracja progów suszy na prawdziwych danych, poprawki po pierwszych testach z
 Rola koordynatora; powiadomienia w aplikacji i Web Push; tryb offline (PWA + synchronizacja); z PDF-ów: pula kodów QR drukowanych przed rejestracją drzewa, wpisy uczestników, porady sezonowe, katalog gatunków i odmian owocowych, kilku opiekunów jednego drzewa.
 
 ### Postęp
+- [x] **Powiadomienia w aplikacji** (1.10) — `Notification` powstaje w chwili przejścia drzewa w stan pilny (`recompute_all`), a nie przy wysyłce digestu: §5.7 mówi „gdy wykryta zostanie potrzeba", czyli raz na epizod suszy. Odbiorcy jak przy mailach — opiekun i koordynatorzy miejscowości; drzewo bez opiekuna trafia wyłącznie do koordynatorów. Limit 1 e-mail/dzień **nie** obowiązuje listy w aplikacji. Ekran `/powiadomienia` wg UI doc §8.8, plakietka nieprzeczytanych w nawigacji (jedno zapytanie na żądanie, zero dla gościa).
 - [x] **Rola koordynatora** (1.10) — `CoordinatorArea` (wiele miejscowości na osobę, miejscowość może mieć zastępcę), przegląd obszaru `/koordynator/` wg UI doc §8.9, przypisywanie i zwalnianie opiekunów w obszarze, digest obszaru zamiast globalnego i apel „📣 Poproś wolontariuszy o pomoc". Koordynator **nie jest** administratorem — progi suszy, konta i eksport CSV pozostają poza zasięgiem; macierz ról ma czwartą kolumnę i to ona tego pilnuje. Apel respektuje limit 1 e-mail/dzień (§5.3) i raportuje, do ilu osób dotarł.
 - [x] **Zdjęcia drzew** (29.09) — model `TreePhoto` (historia zdjęć, nie jedno zdjęcie, wg 1A2), `trees/images.py` przekodowujące każdy upload do JPEG-a i usuwające przy tym **cały EXIF razem z GPS-em**, upload z karty drzewa i z `POST /api/trees/{id}/photos`, panel moderacji `/admin/zdjecia`. Widoczne **tylko dla zalogowanych** — do decyzji klienta (kwestia 8). Pliki w wolumenie `media`, docelowo S3: `STORAGES` i `MEDIA_ROOT` czytane z env, pliki podaje uwierzytelniony widok, więc przepięcie to zmiana konfiguracji, nie kodu.
 
 ---
 
 ## Tempo
-M1 zamknięty 30.09 (plan: 30.09), M2 zamknięty 25.09 (plan: 1–7.10) — jesteśmy przed harmonogramem. Testów: 923.
+M1 zamknięty 30.09 (plan: 30.09), M2 zamknięty 25.09 (plan: 1–7.10) — jesteśmy przed harmonogramem. Testów: 970.
 
 ## Otwarte kwestie (do mentora lub klienta)
 1. **Frontend:** szablony Django sprawdzają się w praktyce (mapa, panel, widok mobilny). Warto to formalnie potwierdzić z mentorem i zamknąć temat.

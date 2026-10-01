@@ -16,5 +16,6 @@ urlpatterns = [
     path("api/admin/", include((admin_api, "admin-api"))),
     path("admin/", include("panel.urls")),
     path("koordynator/", include("coordinator.urls")),
+    path("powiadomienia/", include("notifications.urls")),
     path(settings.DJANGO_ADMIN_URL, admin.site.urls),
 ]

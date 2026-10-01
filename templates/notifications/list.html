@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load trees_tags %}
+{% block title %}Powiadomienia{% endblock %}
+
+{% block content %}
+<main class="page">
+  {% include "includes/logged_in_pill.html" %}
+  <h1>Powiadomienia 🔔</h1>
+
+  {% if notifications %}
+    <form method="post" action="{% url 'notifications:mark-all-read' %}" class="notices-actions">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost">Oznacz wszystkie jako przeczytane</button>
+    </form>
+
+    <ul class="notices">
+      {% for notification in notifications %}
+        <li class="notice{% if notification.is_unread %} unread{% endif %}">
+          <div class="info">
+            <a href="{% url 'trees:card' tree_id=notification.tree_id %}">{{ notification.tree.species }}</a>
+            <div class="meta">
+              📍 {{ notification.tree.locality.name }} · {{ notification.created_at|date:"j E Y, H:i" }}
+            </div>
+            {% if notification.is_unread %}
+              {% comment %}A POST, not a link: a prefetching browser must not clear somebody's notices for them.{% endcomment %}
+              <form method="post" action="{% url 'notifications:open' notification_id=notification.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary notice-open">Otwórz drzewo</button>
+              </form>
+            {% endif %}
+          </div>
+          {% status_badge notification.tree.status %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="card center">
+      <p class="art">🌱</p>
+      <p>Nic nowego — wszystkie Twoje drzewa mają się dobrze.</p>
+      <a class="btn btn-primary" href="{% url 'trees:my' %}">Zobacz moje drzewa</a>
+    </div>
+  {% endif %}
+</main>
+{% endblock %}

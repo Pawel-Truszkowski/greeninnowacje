@@ -14,6 +14,8 @@ from accounts.models import User
 from accounts.permissions import coordinator_localities
 from trees.models import Assignment, Tree
 
+from .models import Notification
+
 
 def _active_assignment():
     return Assignment.objects.filter(tree=OuterRef("pk"), ended_at__isnull=True)
@@ -126,3 +128,18 @@ def area_volunteer_emails(user):
         .distinct()
         .order_by("display_name")
     )
+
+
+def for_user(user):
+    """This user's notices, newest first, ready to render.
+
+    `select_related` on the tree and its locality: the list prints both on every row, and the
+    index on `(user, read_at, -created_at)` is there so this and `unread_count` walk the same
+    key.
+    """
+    return Notification.objects.filter(user=user).select_related("tree", "tree__locality")
+
+
+def unread_count(user):
+    """How many unread notices this user has. A count, not a list — it feeds a badge."""
+    return Notification.objects.filter(user=user, read_at__isnull=True).count()

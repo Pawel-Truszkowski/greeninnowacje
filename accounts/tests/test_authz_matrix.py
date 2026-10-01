@@ -163,6 +163,19 @@ ENDPOINTS = [
         {},
         {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
     ),
+    # Notices belong to whoever they are about, so every signed-in role sees their own.
+    (
+        "get",
+        "notifications:list",
+        {},
+        {"anonymous": 302, "volunteer": 200, "coordinator": 200, "admin": 200},
+    ),
+    (
+        "post",
+        "notifications:mark-all-read",
+        {},
+        {"anonymous": 302, "volunteer": 302, "coordinator": 302, "admin": 302},
+    ),
     # The area screens: a coordinator's own ground, an admin supervises, nobody else.
     (
         "get",

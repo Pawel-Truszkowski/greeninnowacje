@@ -1120,3 +1120,38 @@ input[type="date"] {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* ---------- notifications (Etap 2) ---------- */
+
+.notification-badge {
+  display: inline-block;
+  min-width: 18px;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--urgent);
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.notices-actions { margin-bottom: 12px; }
+.notices { list-style: none; margin: 0; padding: 0; }
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: var(--paper);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border-left: 6px solid var(--line);
+}
+
+/* Unread carries colour *and* weight — colour alone is not a signal (UI doc §6.2). */
+.notice.unread { border-left-color: var(--urgent); font-weight: 700; }
+.notice .info { flex: 1; min-width: 0; }
+.notice-open { margin-top: 10px; }
