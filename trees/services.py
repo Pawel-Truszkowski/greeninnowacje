@@ -15,6 +15,7 @@ from django.utils import timezone
 
 from accounts.permissions import coordinator_localities
 from core.models import load_drought_config
+from notifications.services import notify_urgent
 from weather.services import backfill_locality
 
 from .geo import DUPLICATE_RADIUS_M, bbox_around, haversine_m
@@ -323,17 +324,23 @@ def recompute_all(*, today=None, locality_id=None, save=True) -> RecomputeResult
 
     counts = Counter()
     changed = []
+    urgent_trees = []
     for tree in trees:
         status = compute_status(
             _build_inputs(tree, today, windows[tree.locality_id], tree.last_watered_at), config
         )
         counts[status] += 1
         if status != tree.status:
+            if status == Tree.Status.URGENT:
+                urgent_trees.append(tree)
             tree.status = status
             changed.append(tree)
 
     if save and changed:
         Tree.objects.bulk_update(changed, ["status"])
+
+    if save and urgent_trees:
+        notify_urgent(urgent_trees)
 
     return RecomputeResult(checked=len(trees), changed=len(changed), counts=dict(counts))
 

@@ -9,6 +9,7 @@ Two rules shape everything here:
   scheduled jobs to be safe to repeat.
 """
 
+from collections import defaultdict
 from dataclasses import dataclass
 
 from django.conf import settings
@@ -17,9 +18,11 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 
+from accounts.models import CoordinatorArea
+from trees.models import Assignment
 from trees.qr import tree_card_url
 
-from .models import EmailLog
+from .models import EmailLog, Notification
 from .selectors import (
     active_admins,
     active_coordinators,
@@ -195,27 +198,7 @@ def send_area_appeal(coordinator, today=None):
 
 
 def plan_digests(today, urgent, overview, admins, areas):
-    """Decide who gets an e-mail today and which one — at most one `Digest` per user.
-
-    A pure function, like `trees/status.py`: the caller does the querying, so the rule
-    "who gets what" can be tested on plain dicts and lists.
-
-    Arguments:
-      `today`    — the date in the admin subject line.
-      `urgent`   — `{user: [tree, …]}`, caretakers of URGENT trees (`urgent_by_caretaker()`).
-      `overview` — `{"localities": […], "orphans": […], "urgent_total": int}`
-                   (`admin_overview()`); `urgent_total == 0` means nothing needs water.
-      `admins`   — `[user, …]` who should get the summary (`active_admins()`).
-      `areas`    — `[(coordinator, their own overview), …]`; each is checked separately,
-                   because a quiet area deserves no e-mail even on a day the rest is on fire.
-
-    Builders ready to use: `volunteer_digest(user, trees)`,
-    `admin_digest(user, overview, my_trees, today)` and `coordinator_digest(...)` — the last
-    two skip their personal section when `my_trees` is empty.
-
-    Still at most one `Digest` per user, so a coordinator who also looks after an urgent tree
-    gets their own trees inside the area digest rather than a second e-mail.
-    """
+    """Decide who gets an e-mail today and which one — at most one `Digest` per user."""
     digests = []
     # Copy, because popping below must not empty the caller's dict.
     caretakers = dict(urgent)
@@ -287,3 +270,65 @@ def send_digests(*, today=None, dry_run=False, force=False) -> DigestResult:
             failed += int(not delivered)
 
     return DigestResult(sent=sent, skipped=skipped, failed=failed)
+
+
+def notify_urgent(trees):
+    """Leave an in-app notice for everyone who should act on these trees turning URGENT.
+
+    Called from `recompute_all` with the trees whose status has just become URGENT — so once
+    per drought episode, not once per morning. A tree that was already URGENT yesterday is not
+    in the list, and nothing here should go looking for one.
+
+    Recipients, as in `send_digests` (architecture doc §5.7):
+      * the active caretaker, if there is one;
+      * every coordinator of the tree's locality — for a tree nobody looks after they are the
+        only ones who will hear about it at all.
+
+    One notice per person per tree while an **unread** one exists. The test is the state, not
+    the clock: once somebody has read theirs and the tree is still dry, another reminder is
+    fair.
+
+    Four queries whatever the list's length, which is why the recipients are looked up for
+    all the trees at once rather than per tree.
+    """
+    trees = list(trees)
+    if not trees:
+        return 0
+
+    tree_ids = [tree.pk for tree in trees]
+    caretakers = dict(
+        Assignment.objects.filter(
+            tree_id__in=tree_ids, ended_at__isnull=True, user__is_active=True
+        ).values_list("tree_id", "user_id")
+    )
+    coordinators = defaultdict(list)
+    for locality_id, user_id in CoordinatorArea.objects.filter(
+        locality_id__in={tree.locality_id for tree in trees}, user__is_active=True
+    ).values_list("locality_id", "user_id"):
+        coordinators[locality_id].append(user_id)
+
+    wanted = {
+        (user_id, tree.pk)
+        for tree in trees
+        for user_id in [caretakers.get(tree.pk), *coordinators[tree.locality_id]]
+        if user_id is not None
+    }
+    # Whoever still has an unread notice about that tree has already been told. The test is
+    # the state, not the clock — once it is read, a tree that is still dry may ask again.
+    already = set(
+        Notification.objects.filter(tree_id__in=tree_ids, read_at__isnull=True).values_list(
+            "user_id", "tree_id"
+        )
+    )
+
+    fresh = sorted(wanted - already)
+    Notification.objects.bulk_create(
+        [Notification(user_id=user_id, tree_id=tree_id) for user_id, tree_id in fresh]
+    )
+    return len(fresh)
+
+    assignments = []
+    for tree in trees:
+        assignments.append(
+            Assignment.objects.filter(tree=tree, ended_at__isnull=True).select_related("user")
+        )
