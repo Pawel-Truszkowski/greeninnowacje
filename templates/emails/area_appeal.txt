@@ -1,0 +1,15 @@
+Cześć {{ name }}!
+
+{{ from_name }} prosi o pomoc w okolicy {{ area }} — {{ urgent_total }} drzew(a) czeka na wodę 💧
+{% if orphans %}
+Najpilniejsze są te, które nie mają opiekuna:
+{% for tree in orphans %}
+* {{ tree.species }} — {{ tree.locality }}
+  {{ tree.url }}
+{% endfor %}
+Jeśli jesteś w pobliżu, możesz podlać je nawet bez zgłaszania się do opieki.
+{% endif %}
+Twoje drzewa: {{ my_trees_url }}
+
+Dziękujemy za każdą konewkę! 🌱
+Green Innowacje

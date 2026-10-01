@@ -11,6 +11,7 @@ from collections import Counter
 from django.db.models import Count, Exists, OuterRef
 
 from accounts.models import User
+from accounts.permissions import coordinator_localities
 from trees.models import Assignment, Tree
 
 
@@ -42,13 +43,19 @@ def urgent_by_caretaker():
     return list(grouped.items())
 
 
-def admin_overview():
-    """The admin digest's content: `{"localities": […], "orphans": […], "urgent_total": int}`.
+def admin_overview(localities=None):
+    """The digest's content: `{"localities": […], "orphans": […], "urgent_total": int}`.
 
     `orphans` are the URGENT trees nobody looks after — the section spec §5.3 asks to
     highlight, because they are the only ones no e-mail will reach a caretaker about.
+
+    With `localities` it answers for that scope instead of the whole organisation, which is
+    what a coordinator's digest needs. One function rather than two: the shape has to match
+    exactly, since both feed `plan_digests` and the same kind of template.
     """
     active = Tree.objects.filter(lifecycle=Tree.Lifecycle.ACTIVE)
+    if localities is not None:
+        active = active.filter(locality__in=localities)
 
     orphans = list(
         active.filter(status=Tree.Status.URGENT)
@@ -83,5 +90,39 @@ def active_admins():
     return list(
         User.objects.filter(is_active=True, role=User.Role.ADMIN)
         .exclude(email="")
+        .order_by("display_name")
+    )
+
+
+def active_coordinators():
+    """Coordinators who can be written to. Admins are not here — they get the global digest."""
+    return list(
+        User.objects.filter(is_active=True, role=User.Role.COORDINATOR)
+        .exclude(email="")
+        .order_by("display_name")
+    )
+
+
+def coordinator_overview(user):
+    """`admin_overview()` narrowed to one coordinator's localities."""
+    return admin_overview(localities=coordinator_localities(user))
+
+
+def area_volunteer_emails(user):
+    """Active volunteers caring for trees in the coordinator's area, as a `QuerySet[User]`.
+
+    The appeal goes to people with a stake in the area, not to everyone with an account:
+    mailing strangers about a locality they have never visited is a different thing than
+    asking for help, and only one of them is what the button says.
+    """
+    return (
+        User.objects.filter(
+            is_active=True,
+            assignments__ended_at__isnull=True,
+            assignments__tree__lifecycle=Tree.Lifecycle.ACTIVE,
+            assignments__tree__locality__in=coordinator_localities(user),
+        )
+        .exclude(email="")
+        .distinct()
         .order_by("display_name")
     )

@@ -20,12 +20,23 @@ from django.utils import timezone
 from trees.qr import tree_card_url
 
 from .models import EmailLog
-from .selectors import active_admins, admin_overview, urgent_by_caretaker
+from .selectors import (
+    active_admins,
+    active_coordinators,
+    admin_overview,
+    area_volunteer_emails,
+    coordinator_overview,
+    urgent_by_caretaker,
+)
 
 VOLUNTEER_TEMPLATE = "volunteer_urgent"
 ADMIN_TEMPLATE = "admin_digest"
 VOLUNTEER_SUBJECT = "Twoje drzewa czekają na Ciebie 💧"
 ADMIN_SUBJECT = "Drzewa wymagające podlania — {day:%d.%m.%Y}"
+COORDINATOR_TEMPLATE = "coordinator_digest"
+COORDINATOR_SUBJECT = "{area}: drzewa wymagające podlania — {day:%d.%m.%Y}"
+APPEAL_TEMPLATE = "area_appeal"
+APPEAL_SUBJECT = "Drzewa w okolicy {area} czekają na wodę 💧"
 
 
 @dataclass(frozen=True)
@@ -36,6 +47,16 @@ class Digest:
     template: str
     subject: str
     context: dict
+
+
+@dataclass(frozen=True)
+class AppealResult:
+    """What the coordinator is told: how many heard the appeal, and how many had already
+    had their one e-mail for the day."""
+
+    sent: int = 0
+    skipped: int = 0
+    failed: int = 0
 
 
 @dataclass(frozen=True)
@@ -107,7 +128,73 @@ def already_sent_today(user_ids, today):
     )
 
 
-def plan_digests(today, urgent, overview, admins):
+def coordinator_digest(user, overview, my_trees, today):
+    """The area digest. Same shape as `admin_digest`, narrowed to the coordinator's area."""
+    area = ", ".join(row["name"] for row in overview["localities"])
+    return Digest(
+        user=user,
+        template=COORDINATOR_TEMPLATE,
+        subject=COORDINATOR_SUBJECT.format(area=area, day=today),
+        context={
+            "name": user.display_name,
+            "today": today,
+            "area": area,
+            "my_trees": tree_rows(my_trees),
+            "localities": overview["localities"],
+            "orphans": tree_rows(overview["orphans"]),
+            "urgent_total": overview["urgent_total"],
+            "area_url": _absolute("coordinator:overview"),
+        },
+    )
+
+
+def send_area_appeal(coordinator, today=None):
+    """„📣 Poproś wolontariuszy o pomoc" from the area overview. Returns an `AppealResult`.
+
+    Respects the one-e-mail-a-day rule (spec §5.3) — it is unconditional, and an appeal is
+    not an exception to it. Which is why the result reports `skipped` as well as `sent`: a
+    coordinator who does not know their appeal reached three people out of eight is worse off
+    than one who does.
+    """
+    today = today or timezone.localdate()
+    overview = coordinator_overview(coordinator)
+    recipients = list(area_volunteer_emails(coordinator))
+    if not recipients:
+        return AppealResult()
+
+    blocked = already_sent_today([person.pk for person in recipients], today)
+    due = [person for person in recipients if person.pk not in blocked]
+    area = ", ".join(row["name"] for row in overview["localities"]) or "Twoja okolica"
+
+    sent = failed = 0
+    with get_connection() as connection:
+        for person in due:
+            digest = Digest(
+                user=person,
+                template=APPEAL_TEMPLATE,
+                subject=APPEAL_SUBJECT.format(area=area),
+                context={
+                    "name": person.display_name,
+                    "area": area,
+                    "from_name": coordinator.display_name,
+                    "orphans": tree_rows(overview["orphans"]),
+                    "urgent_total": overview["urgent_total"],
+                    "my_trees_url": _absolute("trees:my"),
+                },
+            )
+            message = render(digest)
+            try:
+                delivered = bool(connection.send_messages([message]))
+            except OSError:
+                delivered = False
+            EmailLog.objects.create(user=person, subject=message.subject, ok=delivered)
+            sent += int(delivered)
+            failed += int(not delivered)
+
+    return AppealResult(sent=sent, skipped=len(recipients) - len(due), failed=failed)
+
+
+def plan_digests(today, urgent, overview, admins, areas):
     """Decide who gets an e-mail today and which one — at most one `Digest` per user.
 
     A pure function, like `trees/status.py`: the caller does the querying, so the rule
@@ -119,10 +206,15 @@ def plan_digests(today, urgent, overview, admins):
       `overview` — `{"localities": […], "orphans": […], "urgent_total": int}`
                    (`admin_overview()`); `urgent_total == 0` means nothing needs water.
       `admins`   — `[user, …]` who should get the summary (`active_admins()`).
+      `areas`    — `[(coordinator, their own overview), …]`; each is checked separately,
+                   because a quiet area deserves no e-mail even on a day the rest is on fire.
 
-    Builders ready to use: `volunteer_digest(user, trees)` and
-    `admin_digest(user, overview, my_trees, today)` — the latter skips its personal section
-    when `my_trees` is empty.
+    Builders ready to use: `volunteer_digest(user, trees)`,
+    `admin_digest(user, overview, my_trees, today)` and `coordinator_digest(...)` — the last
+    two skip their personal section when `my_trees` is empty.
+
+    Still at most one `Digest` per user, so a coordinator who also looks after an urgent tree
+    gets their own trees inside the area digest rather than a second e-mail.
     """
     digests = []
     # Copy, because popping below must not empty the caller's dict.
@@ -133,6 +225,13 @@ def plan_digests(today, urgent, overview, admins):
             # pop() does both jobs at once: it hands over the admin's own urgent trees and
             # takes them out of the volunteer pool, so nobody is written to twice.
             digests.append(admin_digest(admin, overview, caretakers.pop(admin, []), today))
+
+    for person, area in areas:
+        # Checked per area: a quiet one earns no e-mail even on a day the rest is on fire.
+        # A coordinator whose area is quiet stays in the pool below, because their own urgent
+        # tree somewhere else is still their business as a volunteer.
+        if area["urgent_total"]:
+            digests.append(coordinator_digest(person, area, caretakers.pop(person, []), today))
 
     digests += [volunteer_digest(user, trees) for user, trees in caretakers.items()]
     return digests
@@ -153,7 +252,13 @@ def render(digest):
 
 def send_digests(*, today=None, dry_run=False, force=False) -> DigestResult:
     today = today or timezone.localdate()
-    planned = plan_digests(today, dict(urgent_by_caretaker()), admin_overview(), active_admins())
+    planned = plan_digests(
+        today,
+        dict(urgent_by_caretaker()),
+        admin_overview(),
+        active_admins(),
+        [(person, coordinator_overview(person)) for person in active_coordinators()],
+    )
     if not planned:
         return DigestResult()
 

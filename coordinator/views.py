@@ -1,9 +1,12 @@
+from django.conf import settings
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from accounts.models import User
 from accounts.permissions import coordinator_localities, coordinator_required
+from core.ratelimit import rate_limit
+from notifications.services import send_area_appeal
 from trees.models import Tree
 from trees.services import (
     CaretakerConflict,
@@ -82,4 +85,31 @@ def release(request, tree_id):
             if released
             else f"Drzewo {tree.species} i tak nie miało opiekuna.",
         )
+    return redirect("coordinator:overview")
+
+
+@require_POST
+@coordinator_required
+@rate_limit("appeal", lambda: settings.APPEAL_RATE_LIMIT, key="user")
+def appeal(request):
+    """„📣 Poproś wolontariuszy o pomoc" (PoC). Tells the coordinator how far it reached."""
+    if request.limited:
+        messages.error(request, "Apel wysłano już dziś kilka razy. Spróbuj jutro.")
+        return redirect("coordinator:overview")
+
+    result = send_area_appeal(request.user)
+    total = result.sent + result.skipped
+    if not total:
+        messages.info(
+            request, "Nie ma jeszcze komu wysłać apelu — w obszarze nikt nie opiekuje się drzewem."
+        )
+    elif result.skipped:
+        # Both numbers on purpose: silence would look like success.
+        messages.success(
+            request,
+            f"Apel wysłano do {result.sent} z {total} wolontariuszy — "
+            f"pozostali dostali już dziś wiadomość.",
+        )
+    else:
+        messages.success(request, f"Apel wysłano do {result.sent} wolontariuszy. Dziękujemy!")
     return redirect("coordinator:overview")

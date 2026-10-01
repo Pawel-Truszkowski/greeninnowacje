@@ -32,6 +32,16 @@
     </div>
 
     <div class="card">
+      <h2>Potrzebna pomoc?</h2>
+      <p class="muted tight">Wyślij apel do wolontariuszy opiekujących się drzewami w obszarze.
+        Kto dostał już dziś wiadomość, nie dostanie drugiej — powiemy Ci, do ilu osób dotarł.</p>
+      <form method="post" action="{% url 'coordinator:appeal' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-secondary">📣 Poproś wolontariuszy o pomoc</button>
+      </form>
+    </div>
+
+    <div class="card">
       <h2>Wolontariusze w obszarze</h2>
       {% if volunteers %}
         <div class="table-wrap">
