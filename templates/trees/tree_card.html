@@ -7,7 +7,7 @@
   {% if user.is_authenticated %}
     {% include "includes/logged_in_pill.html" %}
   {% else %}
-    <p class="pill">👋 Widok publiczny — logowanie niepotrzebne</p>
+    <p class="pill">👋 Widok publiczny</p>
   {% endif %}
 
   {% if card.lifecycle == "archived" %}
