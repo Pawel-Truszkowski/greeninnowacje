@@ -22,7 +22,7 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    """Volunteer or administrator account (spec §3, table `users`).
+    """Volunteer, administrator or coordinator account (spec §3, table `users`).
 
     `is_staff`/`is_superuser` only gate the technical Django admin;
     permissions inside the app are derived from `role`.
@@ -30,6 +30,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     class Role(models.TextChoices):
         VOLUNTEER = "volunteer", "Wolontariusz"
+        COORDINATOR = "coordinator", "Koordynator"
         ADMIN = "admin", "Administrator"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -71,3 +72,34 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_app_admin(self):
         return self.role == self.Role.ADMIN
+
+
+class CoordinatorArea(models.Model):
+    """A locality a coordinator oversees (architecture doc §3: „dany obszar/miejscowości").
+
+    A table of its own rather than a bare ManyToManyField: the name is part of the schema we
+    control, and an assignment is a fact worth dating. One coordinator may cover several
+    localities, and a locality may have a second coordinator standing in.
+    """
+
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="areas")
+    locality = models.ForeignKey(
+        "trees.Locality", on_delete=models.PROTECT, related_name="coordinators"
+    )
+    assigned_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        db_table = "coordinator_areas"
+        verbose_name = "obszar koordynatora"
+        verbose_name_plural = "obszary koordynatorów"
+        ordering = ["locality__name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "locality"],
+                name="one_area_per_coordinator",
+                violation_error_message="Ten koordynator ma już przypisaną tę miejscowość.",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} → {self.locality_id}"

@@ -6,6 +6,7 @@
   <p class="muted tight">{{ person.email }}</p>
   {% include "includes/form_errors.html" %}
   {% include "includes/field.html" with field=form.role %}
+  {% include "includes/field.html" with field=form.localities %}
   <label class="field">{{ form.is_active }} {{ form.is_active.label }}</label>
   {% for error in form.is_active.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
   <div class="row">

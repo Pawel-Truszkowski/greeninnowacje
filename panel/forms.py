@@ -7,7 +7,7 @@ API — a bad combination (SOON >= URGENT) would silently make "water soon" unre
 
 from django import forms
 
-from accounts.models import User
+from accounts.models import CoordinatorArea, User
 from core.models import DEFAULTS, Config
 from trees.forms import OTHER_SPECIES
 from trees.models import Locality, Tree
@@ -57,7 +57,20 @@ class ThresholdsForm(forms.Form):
 
 
 class UserAdminForm(forms.ModelForm):
-    """Role and account status. The admin editing themselves is the case to guard."""
+    """Role, account status and — for a coordinator — the area they oversee.
+
+    The area belongs on this screen rather than its own: a coordinator without localities
+    oversees nothing, so granting the role separately would create one that silently does
+    not work.
+    """
+
+    localities = forms.ModelMultipleChoiceField(
+        label="Obszar koordynatora",
+        queryset=Locality.objects.all(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Miejscowości pod nadzorem. Przy innych rolach pomijane.",
+    )
 
     class Meta:
         model = User
@@ -67,6 +80,33 @@ class UserAdminForm(forms.ModelForm):
     def __init__(self, *args, editor=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.editor = editor
+        if self.instance.pk:
+            self.fields["localities"].initial = Locality.objects.filter(
+                coordinators__user=self.instance
+            )
+
+    def save(self, commit=True):
+        user = super().save(commit=commit)
+        if commit:
+            self._sync_areas(user)
+        return user
+
+    def _sync_areas(self, user):
+        """Make the stored areas match the form — including emptying them on a demotion.
+
+        A volunteer left with `CoordinatorArea` rows would be a coordinator in all but name
+        the moment somebody restored the role.
+        """
+        wanted = set()
+        if user.role == User.Role.COORDINATOR:
+            wanted = {locality.pk for locality in self.cleaned_data.get("localities", [])}
+
+        areas = CoordinatorArea.objects.filter(user=user)
+        areas.exclude(locality_id__in=wanted).delete()
+        existing = set(areas.values_list("locality_id", flat=True))
+        CoordinatorArea.objects.bulk_create(
+            [CoordinatorArea(user=user, locality_id=pk) for pk in wanted - existing]
+        )
 
     def clean(self):
         cleaned = super().clean()

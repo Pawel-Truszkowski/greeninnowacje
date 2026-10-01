@@ -16,63 +16,209 @@ from factories import UserFactory
 
 pytestmark = pytest.mark.django_db
 
-ROLES = ("anonymous", "volunteer", "admin")
+ROLES = ("anonymous", "volunteer", "coordinator", "admin")
 
 # (method, url name, url kwargs, {role: expected status})
 ENDPOINTS = [
-    ("get", "trees:map", {}, {"anonymous": 200, "volunteer": 200, "admin": 200}),
-    ("get", "accounts:login", {}, {"anonymous": 200, "volunteer": 302, "admin": 302}),
-    ("get", "accounts:register", {}, {"anonymous": 200, "volunteer": 302, "admin": 302}),
-    ("post", "accounts:logout", {}, {"anonymous": 302, "volunteer": 302, "admin": 302}),
-    ("post", "auth-api:api-logout", {}, {"anonymous": 204, "volunteer": 204, "admin": 204}),
-    ("get", "trees-api:list", {}, {"anonymous": 200, "volunteer": 200, "admin": 200}),
-    ("get", "me-api:trees", {}, {"anonymous": 403, "volunteer": 200, "admin": 200}),
+    (
+        "get",
+        "trees:map",
+        {},
+        {"anonymous": 200, "volunteer": 200, "coordinator": 200, "admin": 200},
+    ),
+    (
+        "get",
+        "accounts:login",
+        {},
+        {"anonymous": 200, "volunteer": 302, "coordinator": 302, "admin": 302},
+    ),
+    (
+        "get",
+        "accounts:register",
+        {},
+        {"anonymous": 200, "volunteer": 302, "coordinator": 302, "admin": 302},
+    ),
+    (
+        "post",
+        "accounts:logout",
+        {},
+        {"anonymous": 302, "volunteer": 302, "coordinator": 302, "admin": 302},
+    ),
+    (
+        "post",
+        "auth-api:api-logout",
+        {},
+        {"anonymous": 204, "volunteer": 204, "coordinator": 204, "admin": 204},
+    ),
+    (
+        "get",
+        "trees-api:list",
+        {},
+        {"anonymous": 200, "volunteer": 200, "coordinator": 200, "admin": 200},
+    ),
+    (
+        "get",
+        "me-api:trees",
+        {},
+        {"anonymous": 403, "volunteer": 200, "coordinator": 200, "admin": 200},
+    ),
     # 400: no coordinates — the point is that anonymous users never reach the geocoder.
-    ("get", "trees-api:locality-hint", {}, {"anonymous": 403, "volunteer": 400, "admin": 400}),
-    ("get", "trees:my", {}, {"anonymous": 302, "volunteer": 200, "admin": 200}),
-    ("get", "trees:register", {}, {"anonymous": 302, "volunteer": 200, "admin": 200}),
+    (
+        "get",
+        "trees-api:locality-hint",
+        {},
+        {"anonymous": 403, "volunteer": 400, "coordinator": 400, "admin": 400},
+    ),
+    ("get", "trees:my", {}, {"anonymous": 302, "volunteer": 200, "coordinator": 200, "admin": 200}),
+    (
+        "get",
+        "trees:register",
+        {},
+        {"anonymous": 302, "volunteer": 200, "coordinator": 200, "admin": 200},
+    ),
     # 400: empty payload — the point is that anonymous users never get that far.
-    ("post", "trees-api:create", {}, {"anonymous": 403, "volunteer": 400, "admin": 400}),
+    (
+        "post",
+        "trees-api:create",
+        {},
+        {"anonymous": 403, "volunteer": 400, "coordinator": 400, "admin": 400},
+    ),
     # Admin panel (spec §4): volunteers are forbidden, guests are sent to the login page.
-    ("get", "panel:dashboard", {}, {"anonymous": 302, "volunteer": 403, "admin": 200}),
-    ("get", "panel:thresholds", {}, {"anonymous": 302, "volunteer": 403, "admin": 200}),
-    ("get", "panel:users", {}, {"anonymous": 302, "volunteer": 403, "admin": 200}),
-    ("get", "panel:trees", {}, {"anonymous": 302, "volunteer": 403, "admin": 200}),
-    ("post", "panel:recompute", {}, {"anonymous": 302, "volunteer": 403, "admin": 302}),
-    ("get", "admin-api:stats", {}, {"anonymous": 403, "volunteer": 403, "admin": 200}),
-    ("get", "admin-api:config", {}, {"anonymous": 403, "volunteer": 403, "admin": 200}),
-    ("get", "admin-api:users", {}, {"anonymous": 403, "volunteer": 403, "admin": 200}),
+    (
+        "get",
+        "panel:dashboard",
+        {},
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
+    (
+        "get",
+        "panel:thresholds",
+        {},
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
+    (
+        "get",
+        "panel:users",
+        {},
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
+    (
+        "get",
+        "panel:trees",
+        {},
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
+    (
+        "post",
+        "panel:recompute",
+        {},
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 302},
+    ),
+    (
+        "get",
+        "admin-api:stats",
+        {},
+        {"anonymous": 403, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
+    (
+        "get",
+        "admin-api:config",
+        {},
+        {"anonymous": 403, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
+    (
+        "get",
+        "admin-api:users",
+        {},
+        {"anonymous": 403, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
     # CSV exports (spec §4): rows carry volunteer names, so admin only.
-    ("get", "admin-api:export-trees", {}, {"anonymous": 403, "volunteer": 403, "admin": 200}),
+    (
+        "get",
+        "admin-api:export-trees",
+        {},
+        {"anonymous": 403, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
     (
         "get",
         "admin-api:export-waterings",
         {},
-        {"anonymous": 403, "volunteer": 403, "admin": 200},
+        {"anonymous": 403, "volunteer": 403, "coordinator": 403, "admin": 200},
     ),
-    ("get", "admin-api:export-weather", {}, {"anonymous": 403, "volunteer": 403, "admin": 200}),
-    ("get", "panel:export", {}, {"anonymous": 302, "volunteer": 403, "admin": 200}),
-    ("get", "panel:photos", {}, {"anonymous": 302, "volunteer": 403, "admin": 200}),
+    (
+        "get",
+        "admin-api:export-weather",
+        {},
+        {"anonymous": 403, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
+    (
+        "get",
+        "panel:export",
+        {},
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
+    (
+        "get",
+        "panel:photos",
+        {},
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
 ]
 
 # Same, for endpoints that need an existing tree (kwargs built per test).
 TREE_ENDPOINTS = [
-    ("get", "trees:card", {"anonymous": 200, "volunteer": 200, "admin": 200}),
-    ("get", "trees-api:public", {"anonymous": 200, "volunteer": 200, "admin": 200}),
-    ("get", "trees-api:qr", {"anonymous": 200, "volunteer": 200, "admin": 200}),
-    ("get", "trees-api:detail", {"anonymous": 403, "volunteer": 200, "admin": 200}),
-    ("post", "trees-api:waterings", {"anonymous": 403, "volunteer": 201, "admin": 201}),
-    ("post", "trees-api:assign", {"anonymous": 403, "volunteer": 201, "admin": 201}),
+    ("get", "trees:card", {"anonymous": 200, "volunteer": 200, "coordinator": 200, "admin": 200}),
+    (
+        "get",
+        "trees-api:public",
+        {"anonymous": 200, "volunteer": 200, "coordinator": 200, "admin": 200},
+    ),
+    ("get", "trees-api:qr", {"anonymous": 200, "volunteer": 200, "coordinator": 200, "admin": 200}),
+    (
+        "get",
+        "trees-api:detail",
+        {"anonymous": 403, "volunteer": 200, "coordinator": 200, "admin": 200},
+    ),
+    (
+        "post",
+        "trees-api:waterings",
+        {"anonymous": 403, "volunteer": 201, "coordinator": 201, "admin": 201},
+    ),
+    (
+        "post",
+        "trees-api:assign",
+        {"anonymous": 403, "volunteer": 201, "coordinator": 201, "admin": 201},
+    ),
     # 400: nothing to release — the point is that anonymous users are stopped earlier.
-    ("post", "trees-api:unassign", {"anonymous": 403, "volunteer": 400, "admin": 400}),
+    (
+        "post",
+        "trees-api:unassign",
+        {"anonymous": 403, "volunteer": 400, "coordinator": 400, "admin": 400},
+    ),
     # Photos (Etap 2) are narrower than watering: the tree here belongs to somebody else, so a
     # plain volunteer is refused outright, while the admin gets 400 for sending no file.
-    ("post", "trees-api:photos", {"anonymous": 403, "volunteer": 403, "admin": 400}),
+    (
+        "post",
+        "trees-api:photos",
+        {"anonymous": 403, "volunteer": 403, "coordinator": 403, "admin": 400},
+    ),
     # Pages redirect: anonymous to the login form, logged-in users back to the card.
-    ("post", "trees:water", {"anonymous": 302, "volunteer": 302, "admin": 302}),
-    ("post", "trees:add-photo", {"anonymous": 302, "volunteer": 302, "admin": 302}),
-    ("post", "trees:take-care", {"anonymous": 302, "volunteer": 302, "admin": 302}),
-    ("post", "trees:stop-care", {"anonymous": 302, "volunteer": 302, "admin": 302}),
+    ("post", "trees:water", {"anonymous": 302, "volunteer": 302, "coordinator": 302, "admin": 302}),
+    (
+        "post",
+        "trees:add-photo",
+        {"anonymous": 302, "volunteer": 302, "coordinator": 302, "admin": 302},
+    ),
+    (
+        "post",
+        "trees:take-care",
+        {"anonymous": 302, "volunteer": 302, "coordinator": 302, "admin": 302},
+    ),
+    (
+        "post",
+        "trees:stop-care",
+        {"anonymous": 302, "volunteer": 302, "coordinator": 302, "admin": 302},
+    ),
 ]
 
 
@@ -80,7 +226,7 @@ TREE_ENDPOINTS = [
 def client_as(client):
     def make(role):
         if role != "anonymous":
-            client.force_login(UserFactory(role="admin" if role == "admin" else "volunteer"))
+            client.force_login(UserFactory(role=role))
         return client
 
     return make

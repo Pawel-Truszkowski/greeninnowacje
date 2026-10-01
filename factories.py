@@ -5,7 +5,7 @@ from decimal import Decimal
 import factory
 from django.utils import timezone
 
-from accounts.models import User
+from accounts.models import CoordinatorArea, User
 from trees.models import Locality, Tree
 
 TEST_PASSWORD = "haslo-testowe-123"
@@ -46,3 +46,8 @@ class TreeFactory(factory.django.DjangoModelFactory):
     species = "Lipa drobnolistna"
     planted_on = factory.LazyFunction(timezone.localdate)
     created_by = factory.SubFactory(UserFactory)
+
+
+def oversee(user, locality):
+    """Put a coordinator in charge of a locality (architecture doc §3)."""
+    return CoordinatorArea.objects.create(user=user, locality=locality)
