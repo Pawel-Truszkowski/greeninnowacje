@@ -1,4 +1,4 @@
-# Green Innowacje — monitorowanie podlewania drzew
+# GREENowacje — monitorowanie podlewania drzew
 
 Aplikacja webowa dla wolontariuszy opiekujących się młodymi drzewami. Publiczna mapa nasadzeń,
 karta drzewa dostępna po zeskanowaniu kodu QR, oznaczanie podlania jednym kliknięciem

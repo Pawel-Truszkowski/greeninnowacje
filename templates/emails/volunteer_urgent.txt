@@ -12,4 +12,4 @@ się od razu.
 Wszystkie Twoje drzewa: {{ my_trees_url }}
 
 Dziękujemy, że o nie dbasz! 🌱
-Green Innowacje
+GREENowacje

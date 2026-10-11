@@ -77,6 +77,24 @@ h3 { font-size: 1rem;   font-weight: 700; }
 
 a { color: var(--green-700); }
 
+/* ---------- EU funding bar ---------- */
+
+/* The logos are printed on white and must stay legible — never tint or crop this bar. */
+.funding-bar {
+  margin-top: auto;            /* body is a flex column: pins the footer to the bottom of short pages */
+  background: #fff;
+  padding: 4px 12px;
+  border-top: 1px solid var(--green-100);
+}
+
+.funding-bar img {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+  margin: 0 auto;
+}
+
 /* ---------- app header ---------- */
 
 .app-header {
@@ -92,29 +110,36 @@ a { color: var(--green-700); }
   box-shadow: var(--shadow);
 }
 
-.app-header .logo {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: var(--cream);
-  flex: 0 0 auto;
-}
-
 .app-header .brand {
-  font-weight: 800;
-  font-size: 1.05rem;
-  letter-spacing: .02em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
   color: #fff;
   text-decoration: none;
   line-height: 1.15;
 }
 
-.app-header .brand small {
+/* The wordmark is black on white, so it sits on a white pill to survive the dark header. */
+.app-header .brand-logo {
   display: block;
-  font-weight: 600;
-  font-size: .72rem;
-  opacity: .85;
+  height: 30px;
+  width: auto;
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px 8px;
+  flex: 0 0 auto;
 }
+
+.app-header .brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.app-header .brand-text strong { font-weight: 800; font-size: .95rem; }
+.app-header .brand-text small { font-weight: 600; font-size: .72rem; opacity: .85; }
 
 .app-header .spacer { flex: 1; }
 
@@ -738,7 +763,6 @@ table.data td {
 
 .page.narrow { max-width: 440px; }
 .auth-hero { text-align: center; margin: 24px 0 20px; }
-.auth-hero img { width: 96px; border-radius: 50%; }
 .auth-hero h1 { margin: 12px 0 4px; }
 .auth-hero p { margin: 0; }
 .btn.block { width: 100%; }
@@ -1010,9 +1034,10 @@ b.soon   { color: var(--soon); }
 
 @media (max-width: 640px) {
   .app-header { gap: 8px; padding: 8px 12px; }
-  .app-header .logo { width: 34px; height: 34px; }
-  .app-header .brand { font-size: .95rem; }
-  .app-header .brand small { display: none; }     /* subtitle costs a whole row */
+  .app-header .brand { gap: 8px; }
+  .app-header .brand-logo { height: 22px; padding: 3px 6px; }
+  .app-header .brand-text strong { font-size: .78rem; }
+  .app-header .brand-text small { font-size: .62rem; }   /* wraps to 2–3 lines beside the logo */
   .app-header nav { gap: 2px; }
   .app-header nav a,
   .app-header nav .link-button { padding: 8px 8px; font-size: .8rem; }
@@ -1040,10 +1065,17 @@ b.soon   { color: var(--soon); }
     justify-content: center;
     min-width: 44px;
     min-height: 44px;
-    font-size: 1.5rem;
     color: #fff;
     border-radius: 999px;
     cursor: pointer;
+  }
+  /* Three bars from one element: the middle bar plus two box-shadows above and below. */
+  .burger-icon {
+    width: 22px;
+    height: 2.5px;
+    border-radius: 2px;
+    background: currentColor;
+    box-shadow: 0 -7px 0 currentColor, 0 7px 0 currentColor;
   }
   .nav-toggle:focus-visible + .nav-burger { outline: 2px solid #fff; outline-offset: 2px; }
   .nav-toggle:checked + .nav-burger { background: rgba(255,255,255,.18); }
@@ -1076,7 +1108,7 @@ b.soon   { color: var(--soon); }
   .map-toolbar .chips { flex-wrap: nowrap; }
   .map-toolbar .chip { white-space: nowrap; }
   .map-legend { display: none; }   /* the filter chips already carry the colours */
-  .app-header .brand { white-space: nowrap; }
+  .app-header .brand-text strong { white-space: nowrap; }   /* the subtitle may wrap, the claim may not */
 }
 
 /* The pin being placed during registration — same shape as on the map, brand colour. */

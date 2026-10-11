@@ -23,4 +23,4 @@ Wszystkie drzewa wymagające podlania mają opiekuna.
 {% endif %}
 Przegląd obszaru: {{ area_url }}
 
-Green Innowacje
+GREENowacje

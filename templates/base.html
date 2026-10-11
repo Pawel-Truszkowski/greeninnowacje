@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}Podlewamy drzewa{% endblock %} — Green Innowacje</title>
+<title>{% block title %}Podlewamy drzewa{% endblock %} — GREENowacje</title>
 <link rel="stylesheet" href="{% static 'css/app.css' %}">
 <link rel="icon" href="{% static 'img/logo.png' %}">
 {% block head %}{% endblock %}
@@ -11,14 +11,21 @@
 <body>
 
 <header class="app-header">
-  <img src="{% static 'img/logo.png' %}" alt="Green Innowacje" class="logo">
-  <a class="brand" href="{% url 'trees:map' %}">Green Innowacje<small>Podlewamy drzewa 🌱</small></a>
+  <a class="brand" href="{% url 'trees:map' %}">
+    <img src="{% static 'img/greenowacje-logo.png' %}" width="684" height="92" alt="GREENowacje" class="brand-logo">
+    <span class="brand-text">
+      <strong>„Drzewo dla Pokoleń”</strong>
+      <small>model społecznego sadzenia i monitorowania drzew</small>
+    </span>
+  </a>
   <span class="spacer"></span>
 
   <!-- CSS-only menu: the checkbox holds the state, the label is the ☰ button. No script,
        so the page still works under a strict CSP (M4). -->
   <input class="nav-toggle" type="checkbox" id="nav-toggle" aria-label="Pokaż menu">
-  <label class="nav-burger" for="nav-toggle" title="Menu">☰</label>
+  <!-- Bars drawn in CSS: the ☰ glyph is not in Nunito, and devices without a fallback font
+       showed a "missing character" box instead. -->
+  <label class="nav-burger" for="nav-toggle" title="Menu"><span class="burger-icon"></span></label>
   <nav id="main-nav">
     {% url 'trees:map' as home_url %}
     <a href="{{ home_url }}" {% if request.path == home_url %}class="active" aria-current="page"{% endif %}>Mapa</a>
@@ -51,6 +58,13 @@
 </header>
 
 {% block content %}{% endblock %}
+
+<!-- EU funding bar: a grant visibility obligation. The body is a flex column, so on short
+     pages and on the full-height map the footer still sits at the bottom of the viewport. -->
+<footer class="funding-bar">
+  <img src="{% static 'img/fe-belka.png' %}" width="2050" height="215"
+       alt="Fundusze Europejskie dla Rozwoju Społecznego, Rzeczpospolita Polska, Dofinansowane przez Unię Europejską, SENSE">
+</footer>
 
 {% for message in messages %}
   <div id="toast" class="auto" role="status">{{ message }}</div>

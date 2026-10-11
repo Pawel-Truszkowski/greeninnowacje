@@ -144,7 +144,7 @@ EMAIL_PORT = env.int("SMTP_PORT", default=587)
 EMAIL_HOST_USER = env("SMTP_USER", default="")
 EMAIL_HOST_PASSWORD = env("SMTP_PASS", default="")
 EMAIL_USE_TLS = env.bool("SMTP_USE_TLS", default=True)
-DEFAULT_FROM_EMAIL = env("MAIL_FROM", default="Green Innowacje <noreply@localhost>")
+DEFAULT_FROM_EMAIL = env("MAIL_FROM", default="GREENowacje <noreply@localhost>")
 EMAIL_BACKEND = (
     "django.core.mail.backends.smtp.EmailBackend"
     if EMAIL_HOST

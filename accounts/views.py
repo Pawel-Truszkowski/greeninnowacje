@@ -58,7 +58,7 @@ def register_view(request):
         elif form.is_valid():
             user = form.save()
             login(request, user)
-            messages.success(request, "🎉 Witamy w Green Innowacje! Konto założone.")
+            messages.success(request, "🎉 Witamy w GREENowacjach! Konto założone.")
             return redirect(settings.LOGIN_REDIRECT_URL)
     return render(request, "accounts/register.html", {"form": form}, status=status)
 

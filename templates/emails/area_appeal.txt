@@ -12,4 +12,4 @@ Jeśli jesteś w pobliżu, możesz podlać je nawet bez zgłaszania się do opie
 Twoje drzewa: {{ my_trees_url }}
 
 Dziękujemy za każdą konewkę! 🌱
-Green Innowacje
+GREENowacje
