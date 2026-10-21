@@ -24,6 +24,7 @@ rsync -az --delete \
   --exclude '.ruff_cache/' \
   --exclude 'poc/' \
   --exclude 'spec/' \
+  --exclude 'media/' \
   ./ "${SSH_HOST}:${REMOTE_DIR}/"
 
 echo "==> buduję i restartuję"
