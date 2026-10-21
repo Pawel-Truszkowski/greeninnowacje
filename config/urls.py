@@ -17,5 +17,6 @@ urlpatterns = [
     path("admin/", include("panel.urls")),
     path("koordynator/", include("coordinator.urls")),
     path("powiadomienia/", include("notifications.urls")),
+    path("", include("education.urls")),
     path(settings.DJANGO_ADMIN_URL, admin.site.urls),
 ]

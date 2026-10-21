@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Materiały edukacyjne{% endblock %}
+
+{% block content %}
+<main class="page wide">
+  <h1>Materiały edukacyjne 📚</h1>
+
+  <div class="edu-grid">
+    <article class="card edu-intro">
+      <p class="edu-eyebrow">Zielona innowacja społeczna</p>
+      <h2>„Drzewo dla Pokoleń”</h2>
+      <p class="edu-lead">„Drzewo dla Pokoleń” to zielona innowacja społeczna realizowana w ramach projektu GREENowacje! Generator Pomysłów dla „Zielonych” Innowacji.</p>
+      <p>Jej celem jest połączenie lokalnych akcji sadzenia drzew z edukacją ekologiczną i długofalową opieką nad posadzonymi drzewami.</p>
+      <p>Każde drzewo otrzymuje indywidualne oznaczenie z kodem QR, dzięki któremu można zarejestrować je w aplikacji, dodać zdjęcia, obserwować jego rozwój i dokumentować wykonywane działania pielęgnacyjne. Aplikacja ma pomagać uczestnikom pamiętać o podlewaniu i opiece nad drzewem, a jednocześnie budować zaangażowanie mieszkańców w ochronę lokalnej przyrody.</p>
+      <p>Projekt łączy edukację, technologię i wspólne działanie różnych pokoleń – tak, aby posadzenie drzewa było początkiem dłuższej historii, a nie jednorazową akcją.</p>
+    </article>
+
+    <section class="card edu-video-card" aria-labelledby="edu-video-title">
+      <h2 id="edu-video-title">Jak posadzić drzewo 🌱</h2>
+      <p class="muted">Film instruktażowy · ok. 3 min</p>
+      {% comment %}preload="metadata": a phone downloads nothing until somebody presses play.
+      width/height reserve the 9:16 box before the poster loads.{% endcomment %}
+      <video class="edu-video" controls preload="metadata" playsinline
+             width="720" height="1280"
+             poster="{% static 'video/sadzenie-drzewa-poster.jpg' %}">
+        <source src="{% static 'video/sadzenie-drzewa.mp4' %}" type="video/mp4">
+        <p>Twoja przeglądarka nie odtwarza tego filmu.
+          <a class="btn btn-secondary" href="{% static 'video/sadzenie-drzewa.mp4' %}" download>Pobierz film (MP4)</a>
+        </p>
+      </video>
+    </section>
+  </div>
+</main>
+{% endblock %}

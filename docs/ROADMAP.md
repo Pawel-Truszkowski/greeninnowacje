@@ -106,6 +106,8 @@ Rola koordynatora; powiadomienia w aplikacji i Web Push; tryb offline (PWA + syn
 - [x] **Rola koordynatora** (1.10) — `CoordinatorArea` (wiele miejscowości na osobę, miejscowość może mieć zastępcę), przegląd obszaru `/koordynator/` wg UI doc §8.9, przypisywanie i zwalnianie opiekunów w obszarze, digest obszaru zamiast globalnego i apel „📣 Poproś wolontariuszy o pomoc". Koordynator **nie jest** administratorem — progi suszy, konta i eksport CSV pozostają poza zasięgiem; macierz ról ma czwartą kolumnę i to ona tego pilnuje. Apel respektuje limit 1 e-mail/dzień (§5.3) i raportuje, do ilu osób dotarł.
 - [x] **Zdjęcia drzew** (29.09) — model `TreePhoto` (historia zdjęć, nie jedno zdjęcie, wg 1A2), `trees/images.py` przekodowujące każdy upload do JPEG-a i usuwające przy tym **cały EXIF razem z GPS-em**, upload z karty drzewa i z `POST /api/trees/{id}/photos`, panel moderacji `/admin/zdjecia`. Widoczne **tylko dla zalogowanych** — do decyzji klienta (kwestia 8). Pliki w wolumenie `media`, docelowo S3: `STORAGES` i `MEDIA_ROOT` czytane z env, pliki podaje uwierzytelniony widok, więc przepięcie to zmiana konfiguracji, nie kodu.
 
+- [x] **Materiały edukacyjne** (21.10) — publiczna podstrona `/materialy-edukacyjne` (app `education`, link „Materiały” w menu dla wszystkich): opis innowacji „Drzewo dla Pokoleń” i film instruktażowy o sadzeniu. Film przekodowany z 247 MB HEVC do MP4 H.264 540×960 (`+faststart`) w `static/video/` — serwuje go WhiteNoise z obsługą `Range`, więc działa w każdej przeglądarce i mieści się w CSP `'self'`. Do zrobienia: napisy `.vtt` (WCAG 1.2.2), gdy będzie transkrypcja.
+
 ---
 
 ## Tempo

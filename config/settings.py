@@ -43,6 +43,9 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    # Before staticfiles: runserver then leaves static files to WhiteNoise, as in production.
+    # Django's own handler ignores Range requests, so a <video> could not be seeked in dev.
+    "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
     "rest_framework",
     "core",
@@ -52,6 +55,7 @@ INSTALLED_APPS = [
     "notifications",
     "panel",
     "coordinator",
+    "education",
 ]
 
 MIDDLEWARE = [

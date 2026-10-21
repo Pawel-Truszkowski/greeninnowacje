@@ -28,6 +28,12 @@ ENDPOINTS = [
     ),
     (
         "get",
+        "education:index",
+        {},
+        {"anonymous": 200, "volunteer": 200, "coordinator": 200, "admin": 200},
+    ),
+    (
+        "get",
         "accounts:login",
         {},
         {"anonymous": 200, "volunteer": 302, "coordinator": 302, "admin": 302},

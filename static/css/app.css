@@ -1187,3 +1187,44 @@ input[type="date"] {
 .notice.unread { border-left-color: var(--urgent); font-weight: 700; }
 .notice .info { flex: 1; min-width: 0; }
 .notice-open { margin-top: 10px; }
+
+/* ---------- education materials ---------- */
+
+/* Text first, then the film; side by side once there is room. The film is portrait (9:16),
+   so its column is only as wide as the video at 70vh — the text takes the rest. */
+.edu-grid { display: grid; gap: 16px; align-items: start; }
+/* The grid gap spaces the cards; `.card + .card` would push the film card below the text. */
+.edu-grid .card { margin: 0; }
+@media (min-width: 860px) {
+  .edu-grid { grid-template-columns: minmax(0, 1fr) auto; }
+}
+
+.edu-intro {
+  background: var(--cream-50);
+  border-left: 5px solid var(--green-600);
+  line-height: 1.6;
+}
+.edu-intro h2 { margin: 4px 0 12px; }
+.edu-eyebrow {
+  margin: 0;
+  color: var(--green-700);
+  font-size: .8rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.edu-lead { font-size: 1.1rem; font-weight: 700; color: var(--green-800); }
+
+.edu-video-card h2 { margin: 0; }
+.edu-video-card .muted { margin: 4px 0 12px; }
+.edu-video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 9 / 16;
+  background: var(--green-900);
+  border-radius: var(--radius-sm);
+}
+@media (min-width: 860px) {
+  .edu-video { width: auto; height: 70vh; max-height: 720px; }
+}
