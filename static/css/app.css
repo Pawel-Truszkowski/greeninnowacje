@@ -1228,3 +1228,35 @@ input[type="date"] {
 @media (min-width: 860px) {
   .edu-video { width: auto; height: 70vh; max-height: 720px; }
 }
+
+/* Infographics: one per row on a phone, side by side once there is room. Each is linked at
+   full size so the small print can be zoomed, with a text version in <details> below. */
+.edu-section-title { margin: 32px 0 12px; }
+.edu-guides { display: grid; gap: 16px; align-items: start; }
+.edu-guides .card { margin: 0; }
+@media (min-width: 860px) {
+  .edu-guides { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.edu-guide h3 { margin: 0 0 12px; }
+.edu-infographic {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+.edu-text-version { margin-top: 12px; line-height: 1.6; }
+.edu-text-version > summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;              /* touch target */
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--green-800);
+}
+.edu-steps { padding-left: 1.4em; }
+.edu-steps li + li { margin-top: 8px; }
+.edu-takeaway {
+  padding: 10px 14px;
+  background: var(--green-50);
+  border-radius: var(--radius-sm);
+}

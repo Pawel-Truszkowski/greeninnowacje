@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Materiały edukacyjne{% endblock %}
+{% block title %}Baza wiedzy{% endblock %}
 
 {% block content %}
 <main class="page wide">
-  <h1>Materiały edukacyjne 📚</h1>
+  <h1>Baza wiedzy 📚</h1>
 
   <div class="edu-grid">
     <article class="card edu-intro">
@@ -29,6 +29,55 @@
           <a class="btn btn-secondary" href="{% static 'video/sadzenie-drzewa.mp4' %}" download>Pobierz film (MP4)</a>
         </p>
       </video>
+    </section>
+  </div>
+  <h2 class="edu-section-title">Poradniki</h2>
+  {% comment %}The steps are text inside the images, so each infographic carries a text version
+  in <details> for screen readers, search and small screens (WCAG 1.1.1). Keep the two in sync.
+  width/height reserve the box before a lazy image loads.{% endcomment %}
+  <div class="edu-guides">
+    <section class="card edu-guide" aria-labelledby="guide-planting-title">
+      <h3 id="guide-planting-title">Jak prawidłowo posadzić drzewo?</h3>
+      <a href="{% static 'img/jak-prawidlowo-posadzic-drzewo.jpg' %}" title="Otwórz w pełnym rozmiarze">
+        <img class="edu-infographic" src="{% static 'img/jak-prawidlowo-posadzic-drzewo.jpg' %}"
+             width="1122" height="1402" loading="lazy"
+             alt="Infografika: sześć kroków prawidłowego sadzenia drzewa — od wyboru miejsca po ściółkowanie.">
+      </a>
+      <details class="edu-text-version">
+        <summary>Pokaż jako tekst</summary>
+        <p>Podstawowe zasady sadzenia drzew dla uczestników wydarzenia i użytkowników aplikacji.</p>
+        <ol class="edu-steps">
+          <li><strong>Wybór miejsca.</strong> Wybierz odpowiednie miejsce z wystarczającą ilością przestrzeni i światła. Upewnij się, że w pobliżu nie ma podziemnych instalacji ani przeszkód. Zachowaj odpowiednią odległość od innych drzew i budynków.</li>
+          <li><strong>Przygotowanie dołu.</strong> Wykop dół szerszy od bryły korzeniowej (zazwyczaj 1,5–2 razy szerszy) i odpowiednio głęboki. Spulchnij dno i ścianki dołu, aby ułatwić korzeniom wzrost.</li>
+          <li><strong>Prawidłowa głębokość.</strong> Umieść drzewo w dole tak, aby szyjka korzeniowa (miejsce, gdzie korzenie przechodzą w pień) znajdowała się na poziomie gruntu. Nie sadź zbyt głęboko.</li>
+          <li><strong>Stabilizacja.</strong> W razie potrzeby zastosuj palik (1–2 sztuki) i delikatnie przymocuj do niego drzewo za pomocą elastycznej taśmy. Mocowanie powinno być stabilne, ale nie może uciskać pnia.</li>
+          <li><strong>Podlanie.</strong> Po posadzeniu obficie podlej drzewo, aby gleba dobrze przylegała do korzeni i nie było pustych przestrzeni. W kolejnych tygodniach kontroluj wilgotność gleby, szczególnie w okresach bez opadów.</li>
+          <li><strong>Ściółkowanie.</strong> Rozłóż warstwę ściółki (np. kory, kompostu, zrębków) wokół drzewa, aby ograniczyć parowanie wody i rozwój chwastów. Ściółka nie może bezpośrednio przylegać do pnia – zostaw kilka centymetrów odstępu.</li>
+        </ol>
+        <p class="edu-takeaway"><strong>Najważniejsze:</strong> nie sadź zbyt głęboko, podlej po posadzeniu i kontroluj wilgotność gleby.</p>
+      </details>
+    </section>
+
+    <section class="card edu-guide" aria-labelledby="guide-care-title">
+      <h3 id="guide-care-title">Pielęgnacja drzewa po posadzeniu</h3>
+      <a href="{% static 'img/pielegnacja-drzewa-po-posadzeniu.jpg' %}" title="Otwórz w pełnym rozmiarze">
+        <img class="edu-infographic" src="{% static 'img/pielegnacja-drzewa-po-posadzeniu.jpg' %}"
+             width="1122" height="1402" loading="lazy"
+             alt="Infografika: sześć kroków pielęgnacji drzewa po posadzeniu — od podlewania po dokumentowanie w aplikacji.">
+      </a>
+      <details class="edu-text-version">
+        <summary>Pokaż jako tekst</summary>
+        <p>Działania wspierające prawidłowe przyjęcie się drzewa po wydarzeniu.</p>
+        <ol class="edu-steps">
+          <li><strong>Regularne podlewanie.</strong> Szczególnie w pierwszych tygodniach po posadzeniu, zwłaszcza w okresach bez opadów.</li>
+          <li><strong>Kontrola palików i wiązań.</strong> Regularnie sprawdzaj stabilność palików i stan wiązań. Upewnij się, że nie powodują one uszkodzeń kory.</li>
+          <li><strong>Uzupełnianie ściółki.</strong> Utrzymuj warstwę ściółki (np. kora, zrębki) wokół drzewa. Pomaga to zatrzymać wilgoć w glebie i ogranicza rozwój chwastów.</li>
+          <li><strong>Obserwacja stanu drzewa.</strong> Regularnie obserwuj liście, pędy i pień. Zwracaj uwagę na oznaki stresu, takie jak zahamowanie wzrostu, przebarwienia liści czy uszkodzenia kory.</li>
+          <li><strong>Ochrona przed uszkodzeniami.</strong> Zabezpieczaj drzewo przed deptaniem, uszkodzeniami mechanicznymi (np. przez sprzęt ogrodniczy) oraz działaniem zwierząt.</li>
+          <li><strong>Dokumentowanie w aplikacji.</strong> Regularnie dodawaj zdjęcia, aktualizuj status drzewa i zapisuj informacje o wykonanych działaniach pielęgnacyjnych w aplikacji.</li>
+        </ol>
+        <p class="edu-takeaway">Systematyczna opieka w pierwszym okresie po posadzeniu zwiększa szansę na prawidłowy rozwój drzewa.</p>
+      </details>
     </section>
   </div>
 </main>

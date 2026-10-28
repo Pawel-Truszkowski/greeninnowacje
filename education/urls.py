@@ -6,7 +6,7 @@ app_name = "education"
 # Static content for now; seasonal care tips from PDF 1A7 (Etap 2) will land here too.
 urlpatterns = [
     path(
-        "materialy-edukacyjne",
+        "baza-wiedzy",
         TemplateView.as_view(template_name="education/index.html"),
         name="index",
     ),
