@@ -3,6 +3,11 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:  # "Run workflow" on main redeploys without a new commit
+
+# Read-only by default; the jobs that push the image or log in to the registry ask for more.
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -36,3 +41,108 @@ jobs:
         run: uv run python manage.py makemigrations --check --dry-run
       - name: Tests
         run: uv run pytest
+
+  # Only main is deployed, and only after the tests pass. The image is built here rather than
+  # on the server: the VPS has 1 GB of RAM, and a build there is slow and can run out of memory.
+  image:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.ref.outputs.image }}
+    steps:
+      - uses: actions/checkout@v5
+      # Registry paths must be lowercase; the owner's login is not.
+      - id: ref
+        run: |
+          repo="ghcr.io/${GITHUB_REPOSITORY,,}"
+          echo "image=$repo:sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "latest=$repo:latest" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Tagged by commit, so a rollback is redeploying an older tag; "latest" is what the
+      # server falls back to when a compose command runs without APP_IMAGE.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.ref.outputs.image }}
+            ${{ steps.ref.outputs.latest }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: image
+    runs-on: ubuntu-latest
+    # Secrets and variables live in this environment (Settings → Environments → production).
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    # Two pushes in a row: the second waits, it never cancels a deployment half-way through.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      IMAGE: ${{ needs.image.outputs.image }}
+      COMPOSE: docker compose -f docker-compose.prod.yml
+      REMOTE_DIR: ${{ vars.REMOTE_DIR }}
+      APP_URL: ${{ vars.APP_URL }}
+    steps:
+      - uses: actions/checkout@v5
+      # The host key is pinned from a secret instead of trusted on first use, so a
+      # spoofed server cannot receive the registry token. Secrets go through env, not
+      # ${{ }} in the script, so their content is never parsed as shell.
+      - name: SSH setup
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host server\n  HostName %s\n  Port %s\n  User %s\n  IdentityFile ~/.ssh/id_deploy\n  IdentitiesOnly yes\n' \
+            "$SSH_HOST" "$SSH_PORT" "$SSH_USER" > ~/.ssh/config
+      # The compose file travels with the image, so a change to it deploys too. The
+      # server's .env and database volume are never touched.
+      - name: Upload compose file
+        run: scp docker-compose.prod.yml "server:$REMOTE_DIR/docker-compose.prod.yml"
+      # The job token can pull the private image only while this job runs. It goes over
+      # stdin (never on a command line, where `ps` on the server would show it), and the
+      # logout below runs even when the pull fails, so no credential stays on the server.
+      - name: Pull image
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '%s' "$GHCR_TOKEN" | ssh server "docker login ghcr.io -u '$GITHUB_ACTOR' --password-stdin"
+          ssh server "cd '$REMOTE_DIR' && APP_IMAGE='$IMAGE' $COMPOSE pull app cron"
+      - name: Registry logout
+        if: always()
+        run: ssh server "docker logout ghcr.io" || true
+      - name: Restart
+        run: ssh server "cd '$REMOTE_DIR' && APP_IMAGE='$IMAGE' $COMPOSE up -d --no-build --remove-orphans && docker image prune -f"
+      # Migrations run on container start, so the page answers only once they are done.
+      - name: Smoke test
+        run: |
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$APP_URL/") || true
+            echo "attempt $i: HTTP $code"
+            [ "$code" = 200 ] && exit 0
+            sleep 5
+          done
+          echo "The app did not answer 200 within 150 s." >&2
+          ssh server "cd '$REMOTE_DIR' && $COMPOSE ps && $COMPOSE logs --tail 50 app"
+          exit 1

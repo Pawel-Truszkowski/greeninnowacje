@@ -294,4 +294,6 @@ pyrightconfig.json
 
 # uploaded tree photos (Etap 2)
 /media/
-/deploy/
+
+# local notes about the demo server (host, ports, paths)
+/deploy/DEPLOY-MIKRUS.md

@@ -29,7 +29,12 @@ services:
         limits:
           memory: 320M
 
+  # The image is built by GitHub Actions and pulled from GHCR (.github/workflows/ci.yml);
+  # the deploy job sets APP_IMAGE to the commit's tag. Without it — a manual `exec` or
+  # `up` on the server — compose uses the last image built from main. `build: .` stays so
+  # the file still works on a machine that builds locally.
   app:
+    image: ${APP_IMAGE:-ghcr.io/pawel-truszkowski/greeninnowacje:latest}
     build: .
     restart: unless-stopped
     env_file: .env
@@ -53,6 +58,7 @@ services:
           memory: 480M
 
   cron:
+    image: ${APP_IMAGE:-ghcr.io/pawel-truszkowski/greeninnowacje:latest}
     build: .
     restart: unless-stopped
     env_file: .env

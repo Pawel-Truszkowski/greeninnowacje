@@ -120,8 +120,54 @@ edytowalne z panelu administratora.
 
 ## Wdrożenie
 
-Instancja demonstracyjna (do testów na telefonie i pokazu): [`docs/DEPLOY-MIKRUS.md`](docs/DEPLOY-MIKRUS.md).
-Wdrożenie produkcyjne z backupami i pełnym utwardzeniem to etap M4.
+Instancja demonstracyjna (do testów na telefonie i pokazu) wdraża się sama: każdy commit na
+`main`, który przejdzie testy, trafia na serwer. Wdrożenie produkcyjne z backupami i pełnym
+utwardzeniem to etap M4.
+
+Jak to działa (`.github/workflows/ci.yml`):
+
+1. **test** — lint, migracje, pytest (jak dla każdej gałęzi).
+2. **image** — tylko `main`: GitHub Actions buduje obraz i wysyła go do GitHub Container
+   Registry z tagiem `sha-<commit>` i `latest`. Serwer (1 GB RAM) niczego nie buduje.
+3. **deploy** — przez SSH: kopiuje `docker-compose.prod.yml`, pobiera obraz, restartuje `app`
+   i `cron`, a na koniec sprawdza, czy strona odpowiada. Migracje i pliki statyczne wykonują się
+   przy starcie kontenera ([`deploy/entrypoint.sh`](deploy/entrypoint.sh)). Plik `.env` i baza
+   na serwerze nie są ruszane.
+
+Ponowne wdrożenie bez nowego commita: zakładka **Actions → CI → Run workflow** (gałąź `main`).
+Powrót do poprzedniej wersji — na serwerze, z tagiem wcześniejszego commita:
+
+```bash
+APP_IMAGE=ghcr.io/pawel-truszkowski/greeninnowacje:sha-1a2b3c4 \
+  docker compose -f docker-compose.prod.yml up -d --no-build
+```
+
+### Jednorazowa konfiguracja
+
+**Na serwerze** — katalog z plikiem `.env` (wzór: [`deploy/env.prod.example`](deploy/env.prod.example))
+i osobny klucz SSH tylko dla GitHuba:
+
+```bash
+ssh-keygen -t ed25519 -N "" -C "github-actions-deploy" -f ~/gh-deploy   # na swoim komputerze
+ssh-copy-id -i ~/gh-deploy.pub -p <PORT_SSH> root@srvXX.mikr.us
+ssh-keyscan -p <PORT_SSH> srvXX.mikr.us        # odcisk porównaj z tym, który widzisz przy logowaniu
+```
+
+**Na GitHubie** — *Settings → Environments → New environment* o nazwie `production`
+(w *Deployment branches* zostaw tylko `main`), a w nim:
+
+| Rodzaj | Nazwa | Wartość |
+|---|---|---|
+| Secret | `SSH_HOST` | np. `srvXX.mikr.us` |
+| Secret | `SSH_PORT` | port SSH serwera |
+| Secret | `SSH_USER` | np. `root` |
+| Secret | `SSH_PRIVATE_KEY` | zawartość `~/gh-deploy` (klucz prywatny) |
+| Secret | `SSH_KNOWN_HOSTS` | wynik `ssh-keyscan` |
+| Variable | `REMOTE_DIR` | katalog projektu na serwerze, np. `/root/projects/greeninnowacje` |
+| Variable | `APP_URL` | adres strony z `https://`, bez ukośnika na końcu |
+
+Obraz w GHCR jest prywatny; serwer pobiera go jednorazowym tokenem zadania i od razu się
+wylogowuje, więc żadne hasło do rejestru nie zostaje na serwerze.
 
 ## Stan prac
 

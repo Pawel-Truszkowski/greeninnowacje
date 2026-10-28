@@ -35,7 +35,7 @@ uv run python manage.py makemigrations --check --dry-run   # CI fails on missing
 
 Scheduled jobs live in `deploy/crontab`, run by a `supercronic` container (`cron` service, same image as the app, `TZ` from the environment). `core/tests/test_crontab.py` ties the schedule to the code — a renamed management command fails the suite instead of failing silently every morning.
 
-Dependencies live in `pyproject.toml` / `uv.lock` (no requirements.txt). CI: `.github/workflows/ci.yml` (ruff, migration check, pytest on Postgres).
+Dependencies live in `pyproject.toml` / `uv.lock` (no requirements.txt). CI: `.github/workflows/ci.yml` (ruff, migration check, pytest on Postgres). **A push to `main` deploys**: after the tests, the same workflow builds the image to GHCR and restarts the demo server over SSH (`docker-compose.prod.yml`, `APP_IMAGE=…:sha-<commit>`); secrets live in the GitHub environment `production`, setup steps in `README.md` → „Wdrożenie”.
 
 ## Architecture
 

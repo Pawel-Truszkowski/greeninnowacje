@@ -90,6 +90,7 @@ Kluczowe decyzje przy mapowaniu §3 na Django:
 
 ## M4 — Utwardzenie produkcyjne i wdrożenie (~3–10.10)
 - [ ] Przejście przez checklistę z §7: HTTPS + HSTS, CSP (tylko domena kafelków), `X-Content-Type-Options`, `Referrer-Policy`, walidacja współrzędnych (granice Polski) i długości pól, rate limit na podlanie, bezpieczne cookies, `check --deploy` bez ostrzeżeń.
+- [x] **Automatyczny deploy z GitHuba** (28.10) — w `ci.yml` po testach: obraz budowany w Actions i wysyłany do GHCR (`sha-<commit>` + `latest`), potem SSH na serwer: `compose pull` + `up -d --no-build` + sprawdzenie, czy strona odpowiada 200. Tylko `main`, sekrety w środowisku `production`, klucz hosta przypięty (`SSH_KNOWN_HOSTS`), token rejestru przez stdin i wylogowanie po pobraniu. Ręczny `deploy/deploy.sh` (rsync + build na serwerze) usunięty.
 - [ ] Caddy w Compose; `pg_dump` o 03:00 + kopia poza serwer (rclone) + **sprawdzone przywracanie**.
 - [ ] Dokumentacja: README, `.env.example` z opisem wszystkich zmiennych, instrukcja deployu na VPS, instrukcja administratora (PL).
 - [ ] Pełny zestaw testów z §9, E2E na produkcji, przekazanie kont (MapTiler, SMTP) organizacji.
