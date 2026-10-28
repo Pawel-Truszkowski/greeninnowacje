@@ -61,6 +61,35 @@ def test_infographics_have_text_version(client):
     assert "Kontrola palików i wiązań" in html  # care, step 2
 
 
+def test_topics_in_order_each_introduced_before_its_media(client):
+    # Mentor's brief (2026-10-28): species, planting, care, films — the text before the graphic.
+    html = client.get(URL).content.decode()
+
+    topics = [
+        ("Poznaj gatunki drzew", "Wybierz gatunek i poznaj go bliżej", None),
+        ("Jak prawidłowo posadzić drzewo?", "Zobacz, jak zrobić to dobrze", INFOGRAPHICS[0]),
+        ("Pielęgnacja drzew po posadzeniu", "Sprawdź, jak zadbać o swoje drzewo", INFOGRAPHICS[1]),
+        ("Filmy", "Obejrzyj i sprawdź", "video/sadzenie-drzewa.mp4"),
+    ]
+    positions = []
+    for heading, intro, media in topics:
+        heading_at = html.index(f">{heading}")
+        intro_at = html.index(intro)
+        assert heading_at < intro_at
+        if media:
+            assert intro_at < html.index(f'src="{static(media)}"')
+        positions.append(heading_at)
+
+    assert positions == sorted(positions)
+
+
+def test_species_topic_says_descriptions_are_coming(client):
+    # No species content exists yet; the page must not look like the list failed to load.
+    html = client.get(URL).content.decode()
+
+    assert "Opisy gatunków są w przygotowaniu" in html
+
+
 def test_old_url_is_gone(client):
     # Renamed without a redirect, by decision (2026-10-28).
     assert client.get("/materialy-edukacyjne").status_code == 404
