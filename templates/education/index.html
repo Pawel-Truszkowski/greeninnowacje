@@ -24,9 +24,29 @@
       <h2 id="species-title">Poznaj gatunki drzew 🌳</h2>
       <p>Każdy gatunek drzewa ma inne wymagania, tempo wzrostu i znaczenie dla przyrody. Jedne najlepiej czują się na glebach wilgotnych, inne dobrze radzą sobie na stanowiskach suchych i nasłonecznionych. Różnią się także docelową wielkością, odpornością oraz rolą, jaką pełnią w lokalnym ekosystemie.</p>
       <p>W tej części znajdziesz najważniejsze informacje o gatunkach drzew uwzględnionych w projekcie „Drzewo dla Pokoleń”. Sprawdź, gdzie najlepiej posadzić dane drzewo, jakich warunków potrzebuje do prawidłowego wzrostu oraz dlaczego jest ważne dla owadów, ptaków i innych organizmów.</p>
-      <p class="edu-cta">Wybierz gatunek i poznaj go bliżej.</p>
-      <p class="edu-soon">Opisy gatunków są w przygotowaniu — już wkrótce znajdziesz je tutaj 🌱</p>
+      {% if guides %}
+        <p class="edu-cta">Wybierz gatunek i poznaj go bliżej.</p>
+      {% else %}
+        <p class="edu-soon">Opisy gatunków są w przygotowaniu — już wkrótce znajdziesz je tutaj 🌱</p>
+      {% endif %}
     </div>
+    {% if guides %}
+      {% comment %}The whole card is the link: one large touch target, one tab stop.
+      The photo is decorative next to the name, hence the empty alt.{% endcomment %}
+      <ul class="species-grid">
+        {% for guide in guides %}
+          <li>
+            <a class="species-card" href="{% url 'education:species' guide.slug %}">
+              <img src="{% url 'education:species-image' guide.slug 'miniatura' %}?v={{ guide.version }}"
+                   width="{{ guide.photo_width }}" height="{{ guide.photo_height }}"
+                   loading="lazy" alt="">
+              <span class="species-card-name">{{ guide.name }}</span>
+              <span class="species-card-latin">{{ guide.latin_name }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
   </section>
 
   <section class="card edu-topic" aria-labelledby="planting-title">

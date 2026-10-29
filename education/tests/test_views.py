@@ -1,8 +1,10 @@
-"""The knowledge base page: public, server-rendered, film and infographics served from static."""
+"""The knowledge base: the page itself, the species guides and their public images."""
 
 import pytest
 from django.templatetags.static import static
 from django.urls import reverse
+
+from education.models import SpeciesGuide
 
 pytestmark = pytest.mark.django_db
 
@@ -49,7 +51,11 @@ def test_infographics_are_lazy_and_described(client):
     html = client.get(URL).content.decode()
 
     assert html.count('loading="lazy"') >= len(INFOGRAPHICS)
-    assert 'alt=""' not in html
+    # Infographics need a description. Species card photos may not: the species name is
+    # text inside the same link, so an alt would only make screen readers say it twice.
+    for path in INFOGRAPHICS:
+        tag = html[html.index(f'src="{static(path)}"') :].split(">", 1)[0]
+        assert 'alt="Infografika' in tag
 
 
 def test_infographics_have_text_version(client):
@@ -83,11 +89,102 @@ def test_topics_in_order_each_introduced_before_its_media(client):
     assert positions == sorted(positions)
 
 
-def test_species_topic_says_descriptions_are_coming(client):
-    # No species content exists yet; the page must not look like the list failed to load.
-    html = client.get(URL).content.decode()
+class TestSpeciesGrid:
+    def test_lists_every_published_guide_with_link_and_photo(self, client):
+        html = client.get(URL).content.decode()
 
-    assert "Opisy gatunków są w przygotowaniu" in html
+        for guide in SpeciesGuide.objects.all():
+            assert f'href="{reverse("education:species", args=[guide.slug])}"' in html
+            assert reverse("education:species-image", args=[guide.slug, "miniatura"]) in html
+            assert guide.latin_name in html
+        assert "Opisy gatunków są w przygotowaniu" not in html
+
+    def test_unpublished_guide_is_not_listed(self, client):
+        SpeciesGuide.objects.filter(slug="olsza-czarna").update(is_published=False)
+
+        html = client.get(URL).content.decode()
+
+        assert "olsza-czarna" not in html
+
+    def test_without_guides_says_descriptions_are_coming(self, client):
+        # The page must not look like the list failed to load.
+        SpeciesGuide.objects.update(is_published=False)
+
+        html = client.get(URL).content.decode()
+
+        assert "Opisy gatunków są w przygotowaniu" in html
+
+
+def species_url(slug):
+    return reverse("education:species", args=[slug])
+
+
+class TestSpeciesPage:
+    def test_shows_infographic_linked_at_full_size(self, client):
+        guide = SpeciesGuide.objects.get(slug="lipa-drobnolistna")
+        image = reverse("education:species-image", args=[guide.slug, "infografika"])
+
+        html = client.get(species_url(guide.slug)).content.decode()
+
+        assert f'src="{image}?v={guide.version}"' in html
+        assert f'href="{image}?v={guide.version}"' in html
+        assert 'width="1448" height="1086"' in html
+
+    def test_carries_the_infographic_as_text(self, client):
+        # WCAG 1.1.1: the image's text must reach screen readers and search.
+        html = client.get(species_url("lipa-drobnolistna")).content.decode()
+
+        assert "<h1" in html and "Lipa drobnolistna" in html
+        assert "Tilia cordata" in html
+        assert "<details" in html
+        assert "Cenna dla zapylaczy" in html  # trait
+        assert "Tolerancja na światło" in html  # parameter
+        assert "z dala od linii energetycznych" in html  # where to plant
+        assert "ograniczonej przestrzeni do rozrostu korony" in html  # dislikes
+
+    def test_blank_birch_cells_are_not_shown(self, client):
+        html = client.get(species_url("brzoza-brodawkowata")).content.decode()
+
+        assert "Szerokość korony" not in html
+
+    def test_pager_wraps_around(self, client):
+        html = client.get(species_url("dab-szypulkowy")).content.decode()
+
+        assert f'href="{species_url("olsza-czarna")}" rel="prev"' in html
+        assert f'href="{species_url("dab-bezszypulkowy")}" rel="next"' in html
+
+    def test_nav_marks_knowledge_base_without_claiming_current_page(self, client):
+        html = client.get(species_url("klon-polny")).content.decode()
+
+        assert f'<a href="{URL}" class="active">Baza wiedzy</a>' in html
+
+    @pytest.mark.parametrize("slug", ["nie-ma-takiego", "olsza-czarna"])
+    def test_unknown_or_unpublished_is_404(self, client, slug):
+        SpeciesGuide.objects.filter(slug="olsza-czarna").update(is_published=False)
+
+        assert client.get(species_url(slug)).status_code == 404
+
+
+class TestSpeciesImage:
+    @pytest.mark.parametrize("kind", ["infografika", "miniatura"])
+    def test_serves_jpeg_publicly_with_caching(self, client, kind):
+        response = client.get(reverse("education:species-image", args=["klon-polny", kind]))
+
+        assert response.status_code == 200
+        assert response["Content-Type"] == "image/jpeg"
+        assert response["Cache-Control"] == "public, max-age=86400"
+        assert b"".join(response.streaming_content)[:2] == b"\xff\xd8"  # JPEG magic
+
+    def test_unknown_kind_is_404(self, client):
+        url = reverse("education:species-image", args=["klon-polny", "zdjecie"])
+
+        assert client.get(url).status_code == 404
+
+    def test_unpublished_is_404(self, client):
+        SpeciesGuide.objects.filter(slug="klon-polny").update(is_published=False)
+        url = reverse("education:species-image", args=["klon-polny", "infografika"])
+
+        assert client.get(url).status_code == 404
 
 
 def test_old_url_is_gone(client):

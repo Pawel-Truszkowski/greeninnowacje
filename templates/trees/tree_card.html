@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load trees_tags %}
+{% load trees_tags education_tags %}
 {% block title %}{{ card.species }}{% endblock %}
 
 {% block content %}
@@ -62,7 +62,12 @@
   <div class="card">
     <h2>Informacje</h2>
     <dl class="kv">
-      <dt>Gatunek</dt><dd>{{ card.species }}</dd>
+      {% species_guide card.species as guide %}
+      <dt>Gatunek</dt>
+      <dd>
+        {{ card.species }}
+        {% if guide %}<a class="species-guide-link" href="{% url 'education:species' guide.slug %}">Poznaj ten gatunek ›</a>{% endif %}
+      </dd>
       <dt>Data zasadzenia</dt><dd>{{ card.planted_on|date:"j E Y" }}</dd>
       {% if card.planted_by %}<dt>Kto sadził</dt><dd>{{ card.planted_by }}</dd>{% endif %}
       <dt>Opiekun</dt>

@@ -27,8 +27,7 @@ def no_geocoder(monkeypatch):
 
 
 @pytest.fixture
-def catalogue():
-    TreeSpecies.objects.all().delete()
+def catalogue(empty_species_catalogue):
     return [
         TreeSpecies.objects.create(name="Dąb szypułkowy"),
         TreeSpecies.objects.create(name="Lipa drobnolistna"),

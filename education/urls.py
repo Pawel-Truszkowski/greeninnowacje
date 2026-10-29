@@ -1,13 +1,16 @@
 from django.urls import path
-from django.views.generic import TemplateView
+
+from . import views
 
 app_name = "education"
 
-# Static content for now; seasonal care tips from PDF 1A7 (Etap 2) will land here too.
+# Seasonal care tips from PDF 1A7 (Etap 2) will land here too.
 urlpatterns = [
+    path("baza-wiedzy", views.index, name="index"),
+    path("baza-wiedzy/gatunki/<slug:slug>", views.species_detail, name="species"),
     path(
-        "baza-wiedzy",
-        TemplateView.as_view(template_name="education/index.html"),
-        name="index",
+        "baza-wiedzy/gatunki/<slug:slug>/<str:kind>.jpg",
+        views.species_image,
+        name="species-image",
     ),
 ]

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ guide.name }} — Baza wiedzy{% endblock %}
+
+{% block content %}
+<main class="page wide">
+  <p class="species-back"><a href="{% url 'education:index' %}">‹ Baza wiedzy</a></p>
+
+  <article class="card species-page" aria-labelledby="species-name">
+    <h1 id="species-name" class="tight">{{ guide.name }}</h1>
+    <p class="species-latin">{{ guide.latin_name }}</p>
+
+    {% comment %}The infographic carries all of its text as an image, so the same content
+    follows as text (WCAG 1.1.1). width/height reserve the box before the image loads.{% endcomment %}
+    {% url 'education:species-image' guide.slug 'infografika' as infographic_url %}
+    <a href="{{ infographic_url }}?v={{ guide.version }}" title="Otwórz w pełnym rozmiarze">
+      <img class="edu-infographic" src="{{ infographic_url }}?v={{ guide.version }}"
+           width="{{ guide.infographic_width }}" height="{{ guide.infographic_height }}"
+           alt="Infografika: {{ guide.name }} ({{ guide.latin_name }}) — cechy, wymagania i gdzie najlepiej sadzić.">
+    </a>
+
+    <details class="edu-text-version">
+      <summary>Pokaż jako tekst</summary>
+      <p>{{ guide.summary }}</p>
+
+      {% if guide.trait_list %}
+        <h2>Najważniejsze cechy</h2>
+        <ul class="species-traits">
+          {% for title, text in guide.trait_list %}
+            <li><strong>{{ title }}</strong>{% if text %} — {{ text }}{% endif %}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% if guide.param_list %}
+        <h2>Wymagania</h2>
+        <dl class="kv">
+          {% for label, value in guide.param_list %}
+            <dt>{{ label }}</dt><dd>{{ value }}</dd>
+          {% endfor %}
+        </dl>
+      {% endif %}
+
+      {% if guide.plant_where_list %}
+        <h2>Gdzie najlepiej sadzić?</h2>
+        <ul>{% for item in guide.plant_where_list %}<li>{{ item }}</li>{% endfor %}</ul>
+      {% endif %}
+
+      {% if guide.dislike_list %}
+        <h2>Czego nie lubi?</h2>
+        <ul>{% for item in guide.dislike_list %}<li>{{ item }}</li>{% endfor %}</ul>
+      {% endif %}
+    </details>
+  </article>
+
+  {% if previous and next %}
+    <nav class="species-pager" aria-label="Inne gatunki">
+      <a class="btn btn-secondary" href="{% url 'education:species' previous.slug %}" rel="prev">‹ {{ previous.name }}</a>
+      <a class="btn btn-secondary" href="{% url 'education:species' next.slug %}" rel="next">{{ next.name }} ›</a>
+    </nav>
+  {% endif %}
+</main>
+{% endblock %}
