@@ -1259,3 +1259,72 @@ input[type="date"] {
   background: var(--green-50);
   border-radius: var(--radius-sm);
 }
+
+/* Species guides: a grid of photo cards, each one link to the species page. Two columns on
+   a phone so all eight fit in a couple of screens, four once there is room. */
+.species-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 860px) {
+  .species-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+}
+.species-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--green-100);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--ink);
+  text-decoration: none;
+  transition: box-shadow .15s, transform .15s;
+}
+.species-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.species-card:focus-visible { outline: 3px solid var(--green-600); outline-offset: 2px; }
+.species-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+.species-card-name { padding: 10px 12px 0; font-weight: 800; line-height: 1.25; }
+.species-card-latin {
+  padding: 2px 12px 12px;
+  color: var(--ink-soft);
+  font-size: .85rem;
+  font-style: italic;
+}
+
+.species-back { margin: 0 0 12px; }
+.species-back a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;              /* touch target */
+  font-weight: 700;
+  color: var(--green-800);
+}
+.species-latin { margin: 4px 0 16px; color: var(--ink-soft); font-style: italic; }
+.species-page .edu-text-version h2 { margin: 20px 0 8px; font-size: 1.05rem; }
+.species-traits li + li { margin-top: 6px; }
+.species-pager {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+/* Under the species name on a tree card; its own line, so it never wraps mid-way. */
+.species-guide-link {
+  display: flex;
+  align-items: center;
+  min-height: 44px;              /* touch target */
+  font-weight: 700;
+  color: var(--green-700);
+}

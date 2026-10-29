@@ -21,3 +21,16 @@ def locality(db):
 @pytest.fixture
 def tree(db):
     return TreeFactory()
+
+
+@pytest.fixture
+def empty_species_catalogue(db):
+    """Start from an empty species catalogue instead of the seeded one.
+
+    Species guides go first: each one PROTECTs its catalogue entry.
+    """
+    from education.models import SpeciesGuide
+    from trees.models import TreeSpecies
+
+    SpeciesGuide.objects.all().delete()
+    TreeSpecies.objects.all().delete()

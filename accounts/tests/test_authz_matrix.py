@@ -34,6 +34,18 @@ ENDPOINTS = [
     ),
     (
         "get",
+        "education:species",
+        {"slug": "dab-szypulkowy"},
+        {"anonymous": 200, "volunteer": 200, "coordinator": 200, "admin": 200},
+    ),
+    (
+        "get",
+        "education:species-image",
+        {"slug": "dab-szypulkowy", "kind": "infografika"},
+        {"anonymous": 200, "volunteer": 200, "coordinator": 200, "admin": 200},
+    ),
+    (
+        "get",
         "accounts:login",
         {},
         {"anonymous": 200, "volunteer": 302, "coordinator": 302, "admin": 302},

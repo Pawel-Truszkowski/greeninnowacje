@@ -30,7 +30,8 @@
     {% url 'trees:map' as home_url %}
     <a href="{{ home_url }}" {% if request.path == home_url %}class="active" aria-current="page"{% endif %}>Mapa</a>
     {% url 'education:index' as education_url %}
-    <a href="{{ education_url }}" {% if request.path == education_url %}class="active" aria-current="page"{% endif %}>Baza wiedzy</a>
+    {# Highlighted on species pages too; aria-current only where the link leads to this very page. #}
+    <a href="{{ education_url }}" {% if request.path == education_url %}class="active" aria-current="page"{% elif request.resolver_match.namespace == "education" %}class="active"{% endif %}>Baza wiedzy</a>
     {% if user.is_authenticated %}
       {% url 'trees:register' as register_url %}
       <a href="{{ register_url }}" {% if request.path == register_url %}class="active" aria-current="page"{% endif %}>+ Drzewo</a>

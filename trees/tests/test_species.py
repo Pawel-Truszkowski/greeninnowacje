@@ -62,8 +62,7 @@ class TestCatalogueModel:
         with pytest.raises(IntegrityError):
             TreeSpecies.objects.create(name="grusza konferencja")
 
-    def test_ordered_by_name(self):
-        TreeSpecies.objects.all().delete()
+    def test_ordered_by_name(self, empty_species_catalogue):
         TreeSpecies.objects.create(name="Wierzba")
         TreeSpecies.objects.create(name="Buk")
 
@@ -71,22 +70,19 @@ class TestCatalogueModel:
 
 
 class TestActiveSpeciesNames:
-    def test_returns_sorted_names(self):
-        TreeSpecies.objects.all().delete()
+    def test_returns_sorted_names(self, empty_species_catalogue):
         TreeSpecies.objects.create(name="Wierzba")
         TreeSpecies.objects.create(name="Buk")
 
         assert active_species_names() == ["Buk", "Wierzba"]
 
-    def test_skips_retired_species(self):
-        TreeSpecies.objects.all().delete()
+    def test_skips_retired_species(self, empty_species_catalogue):
         TreeSpecies.objects.create(name="Buk")
         TreeSpecies.objects.create(name="Topola", is_active=False)
 
         assert active_species_names() == ["Buk"]
 
-    def test_empty_catalogue(self):
-        TreeSpecies.objects.all().delete()
+    def test_empty_catalogue(self, empty_species_catalogue):
 
         assert active_species_names() == []
 
