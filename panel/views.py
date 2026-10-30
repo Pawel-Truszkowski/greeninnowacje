@@ -12,10 +12,13 @@ from django.views.decorators.http import require_POST
 
 from accounts.models import User
 from accounts.permissions import app_admin_required
+from education.models import SpeciesGuide
+from education.services import save_guide, toggle_published
+from education.views import guide_image_response
 from trees.models import Tree, TreePhoto
 from trees.services import delete_photo, recompute_all
 
-from .forms import ThresholdsForm, TreeAdminForm, UserAdminForm
+from .forms import SpeciesGuideForm, ThresholdsForm, TreeAdminForm, UserAdminForm
 from .selectors import ACTIVITY_DAYS, dashboard_stats, recent_photos
 
 
@@ -140,3 +143,56 @@ def remove_photo(request, photo_id):
     delete_photo(photo, request.user)
     messages.success(request, "Zdjęcie zostało usunięte.")
     return redirect("panel:photos")
+
+
+@app_admin_required
+def species_list(request):
+    guides = SpeciesGuide.objects.select_related("species")
+    return render(request, "panel/species.html", {"guides": guides, "tab": "species"})
+
+
+@app_admin_required
+def add_species(request):
+    return _species_form(request, SpeciesGuide())
+
+
+@app_admin_required
+def edit_species(request, guide_id):
+    guide = get_object_or_404(SpeciesGuide.objects.select_related("species"), pk=guide_id)
+    return _species_form(request, guide)
+
+
+def _species_form(request, guide):
+    adding = guide.pk is None
+    form = SpeciesGuideForm(request.POST or None, request.FILES or None, instance=guide)
+    if request.method == "POST" and form.is_valid():
+        guide = save_guide(
+            form.save(commit=False),
+            form.cleaned_data["species"],
+            infographic=form.cleaned_data["infographic"],
+            photo=form.cleaned_data["photo"],
+        )
+        messages.success(
+            request, f"{'Dodano' if adding else 'Zapisano'} opis gatunku: {guide.name}."
+        )
+        return redirect("panel:species")
+    context = {"form": form, "guide": guide, "adding": adding, "tab": "species"}
+    return render(request, "panel/species_form.html", context)
+
+
+@require_POST
+@app_admin_required
+def toggle_species(request, guide_id):
+    """Publish or hide — guides are not deleted, like trees (their species is PROTECTed)."""
+    guide = toggle_published(get_object_or_404(SpeciesGuide, pk=guide_id))
+    state = "opublikowany" if guide.is_published else "ukryty"
+    messages.success(request, f"Opis gatunku {guide.name} jest teraz {state}.")
+    return redirect("panel:species")
+
+
+@app_admin_required
+def species_image(request, guide_id, kind):
+    """Preview for the panel: unlike the public URL, it shows hidden guides too."""
+    response = guide_image_response(get_object_or_404(SpeciesGuide, pk=guide_id), kind)
+    response["Cache-Control"] = "private, no-cache"
+    return response

@@ -16,6 +16,11 @@ urlpatterns = [
     path("eksport", views.export, name="export"),
     path("zdjecia", views.photos, name="photos"),
     path("zdjecia/<uuid:photo_id>/usun", views.remove_photo, name="remove-photo"),
+    path("gatunki", views.species_list, name="species"),
+    path("gatunki/nowy", views.add_species, name="add-species"),
+    path("gatunki/<int:guide_id>", views.edit_species, name="edit-species"),
+    path("gatunki/<int:guide_id>/publikacja", views.toggle_species, name="toggle-species"),
+    path("gatunki/<int:guide_id>/<str:kind>.jpg", views.species_image, name="species-image"),
 ]
 
 api_urlpatterns = [

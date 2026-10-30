@@ -12,6 +12,7 @@ from django.test import RequestFactory
 from django.urls import reverse
 
 from accounts.permissions import IsAppAdmin, IsVolunteer, app_admin_required
+from education.models import SpeciesGuide
 from factories import UserFactory
 
 pytestmark = pytest.mark.django_db
@@ -181,6 +182,18 @@ ENDPOINTS = [
         {},
         {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
     ),
+    (
+        "get",
+        "panel:species",
+        {},
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
+    (
+        "get",
+        "panel:add-species",
+        {},
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
     # Notices belong to whoever they are about, so every signed-in role sees their own.
     (
         "get",
@@ -274,6 +287,29 @@ TREE_ENDPOINTS = [
 ]
 
 
+# Panel pages about one species guide (kwargs built per test from a seeded guide).
+GUIDE_ENDPOINTS = [
+    (
+        "get",
+        "panel:edit-species",
+        {},
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
+    (
+        "post",
+        "panel:toggle-species",
+        {},
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 302},
+    ),
+    (
+        "get",
+        "panel:species-image",
+        {"kind": "miniatura"},
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
+]
+
+
 @pytest.fixture
 def client_as(client):
     def make(role):
@@ -314,6 +350,18 @@ def test_coordinator_tree_endpoint_access(client_as, tree, role, method, name, e
 )
 def test_tree_endpoint_access(client_as, tree, role, method, name, expected):
     url = reverse(name, kwargs={"tree_id": tree.pk})
+    assert getattr(client_as(role), method)(url).status_code == expected[role]
+
+
+@pytest.mark.parametrize("role", ROLES)
+@pytest.mark.parametrize(
+    ("method", "name", "kwargs", "expected"),
+    GUIDE_ENDPOINTS,
+    ids=[f"{m.upper()} {n}" for m, n, *_ in GUIDE_ENDPOINTS],
+)
+def test_guide_endpoint_access(client_as, role, method, name, kwargs, expected):
+    guide = SpeciesGuide.objects.get(slug="klon-polny")
+    url = reverse(name, kwargs={"guide_id": guide.pk, **kwargs})
     assert getattr(client_as(role), method)(url).status_code == expected[role]
 
 
