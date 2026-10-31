@@ -1,0 +1,45 @@
+{% extends "panel/base_panel.html" %}
+{% block panel %}
+<form class="card" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {% if adding %}
+    <h2>Nowy gatunek</h2>
+    <p class="muted tight">Adres strony powstanie z nazwy gatunku i nie zmieni się później.</p>
+  {% else %}
+    <h2>{{ guide.name }}</h2>
+    <p class="muted tight">Adres: {% url 'education:species' slug=guide.slug %}</p>
+  {% endif %}
+  {% include "includes/form_errors.html" %}
+
+  {% include "includes/field.html" with field=form.species %}
+  {% include "includes/field.html" with field=form.species_other %}
+  {% include "includes/field.html" with field=form.latin_name %}
+
+  {% if not adding %}
+    <figure class="species-preview">
+      <img src="{% url 'panel:species-image' guide_id=guide.pk kind='infografika' %}?v={{ guide.version }}"
+           width="{{ guide.infographic_width }}" height="{{ guide.infographic_height }}" alt="Obecna infografika">
+      <img src="{% url 'panel:species-image' guide_id=guide.pk kind='miniatura' %}?v={{ guide.version }}"
+           width="{{ guide.photo_width }}" height="{{ guide.photo_height }}" alt="Obecne zdjęcie na kartę">
+      <figcaption class="muted">Obecne obrazy</figcaption>
+    </figure>
+  {% endif %}
+  {% include "includes/field.html" with field=form.infographic %}
+  {% include "includes/field.html" with field=form.photo %}
+
+  <h3>Treść infografiki jako tekst</h3>
+  <p class="muted tight">Czytają ją czytniki ekranu i wyszukiwarki — przepisz to, co jest na infografice.</p>
+  {% include "includes/field.html" with field=form.summary %}
+  {% include "includes/field.html" with field=form.traits %}
+  {% include "includes/field.html" with field=form.params %}
+  {% include "includes/field.html" with field=form.plant_where %}
+  {% include "includes/field.html" with field=form.dislikes %}
+
+  {% include "includes/field.html" with field=form.position %}
+  {% include "includes/field.html" with field=form.is_published %}
+  <div class="row">
+    <button type="submit" class="btn btn-primary">{% if adding %}Dodaj gatunek{% else %}Zapisz{% endif %}</button>
+    <a class="btn btn-ghost" href="{% url 'panel:species' %}">Anuluj</a>
+  </div>
+</form>
+{% endblock %}

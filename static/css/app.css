@@ -280,6 +280,14 @@ label.field .optional {
   color: var(--ink-soft);
 }
 
+/* Its own line, so the hint below does not wrap around the button. */
+label.field input[type="file"] {
+  display: block;
+  width: 100%;
+  min-height: 44px;              /* touch target */
+  margin-top: 6px;
+}
+
 input[type="text"], input[type="email"], input[type="password"],
 input[type="date"], input[type="number"], select, textarea {
   width: 100%;
@@ -1328,3 +1336,25 @@ input[type="date"] {
   font-weight: 700;
   color: var(--green-700);
 }
+
+/* Admin panel, species list and form. */
+.species-thumb {
+  display: block;
+  width: 48px;
+  height: auto;
+  border-radius: 6px;
+}
+.species-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 8px 0 16px;
+}
+.species-preview img {
+  max-width: min(100%, 320px);
+  height: auto;
+  border-radius: 8px;
+}
+.species-preview img + img { max-width: 96px; }
+.species-preview figcaption { flex-basis: 100%; }

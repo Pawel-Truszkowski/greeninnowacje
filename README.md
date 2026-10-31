@@ -45,6 +45,7 @@ Pod `/admin/` (konto z rolą administratora — w danych demo `admin@przyklad.pl
 | Drzewa | filtry, edycja danych, archiwizacja i przywracanie (drzew nie usuwamy) |
 | Użytkownicy | rola i aktywność konta; własnego konta nie można zdegradować ani wyłączyć |
 | Progi suszy | wartości z tabeli `config` + przycisk „Przelicz statusy teraz” |
+| Gatunki | opisy gatunków w Bazie wiedzy: dodawanie, edycja, ukrywanie; infografika i zdjęcie (PNG/JPEG) zapisywane jako JPEG, zdjęcie przycinane do kadru 4:5 |
 
 Techniczny Django admin (dla programisty) żyje osobno, pod `DJANGO_ADMIN_URL`.
 

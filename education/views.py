@@ -39,10 +39,17 @@ def species_image(request, slug, kind):
     and a constant plus the global `nosniff` leaves no room for content-type games. The URL
     carries `?v=<updated_at>`, so a day of caching never shows a replaced image.
     """
+    if kind not in IMAGE_KINDS:
+        raise Http404
+    guide = get_object_or_404(SpeciesGuide, slug=slug, is_published=True)
+    response = guide_image_response(guide, kind)
+    response["Cache-Control"] = "public, max-age=86400"
+    return response
+
+
+def guide_image_response(guide, kind):
+    """The file behind `kind`; shared with the panel preview, which also shows hidden guides."""
     field = IMAGE_KINDS.get(kind)
     if field is None:
         raise Http404
-    guide = get_object_or_404(SpeciesGuide, slug=slug, is_published=True)
-    response = FileResponse(getattr(guide, field).open("rb"), content_type="image/jpeg")
-    response["Cache-Control"] = "public, max-age=86400"
-    return response
+    return FileResponse(getattr(guide, field).open("rb"), content_type="image/jpeg")

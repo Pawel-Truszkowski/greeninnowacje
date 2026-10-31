@@ -106,6 +106,14 @@ class TestGeometry:
 
         assert (processed.width, processed.height) == (320, 240)
 
+    @pytest.mark.parametrize("size", [(4000, 3000), (600, 1600), (200, 150)])
+    def test_fit_gives_exactly_the_requested_size(self, size):
+        """Species cards in the knowledge base: every photo the same 4:5 shape."""
+        processed = process_upload(FakeUpload(jpeg(size=size)), fit=(400, 500))
+
+        assert (processed.width, processed.height) == (400, 500)
+        assert opened(processed).size == (400, 500)
+
     def test_reported_size_matches_the_stored_file(self):
         """The numbers go into <img width height>, so a mismatch would shift the layout."""
         processed = process_upload(FakeUpload(jpeg(size=(1000, 500))))

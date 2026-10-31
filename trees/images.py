@@ -71,8 +71,11 @@ def _flattened(image):
     return white.convert("RGB")
 
 
-def process_upload(uploaded_file):
+def process_upload(uploaded_file, *, fit=None):
     """Validate, straighten, shrink and re-encode an upload into a `ProcessedImage`.
+
+    With `fit=(width, height)` the result has exactly that size: the centre is cropped to the
+    aspect ratio and scaled, up if need be — a grid of cards needs every photo the same shape.
 
     The file gets a plain name; the tree id and UUID belong in the model's `upload_to`.
     """
@@ -85,7 +88,10 @@ def process_upload(uploaded_file):
 
     with _open_checked(data) as image:
         photo = ImageOps.exif_transpose(image)
-        photo.thumbnail((MAX_EDGE_PX, MAX_EDGE_PX), Image.Resampling.LANCZOS)
+        if fit:
+            photo = ImageOps.fit(photo, fit, Image.Resampling.LANCZOS)
+        else:
+            photo.thumbnail((MAX_EDGE_PX, MAX_EDGE_PX), Image.Resampling.LANCZOS)
         photo = _flattened(photo)
 
     # Encoding sits outside the try above: a failure here is our bug, not a bad upload.

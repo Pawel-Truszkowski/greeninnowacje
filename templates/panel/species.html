@@ -1,0 +1,48 @@
+{% extends "panel/base_panel.html" %}
+{% block panel %}
+<section class="card">
+  <h2>Gatunki w Bazie wiedzy 📚</h2>
+  <p class="muted tight">Każdy gatunek to osobna strona z infografiką. Ukryty gatunek znika
+    z Bazy wiedzy i z kart drzew, ale jego opis zostaje tutaj.</p>
+  <p class="tight"><a class="btn btn-primary" href="{% url 'panel:add-species' %}">+ Dodaj gatunek</a></p>
+</section>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th></th><th>Gatunek</th><th>Kolejność</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for guide in guides %}
+          <tr>
+            <td><img class="species-thumb" src="{% url 'panel:species-image' guide_id=guide.pk kind='miniatura' %}?v={{ guide.version }}"
+                     width="{{ guide.photo_width }}" height="{{ guide.photo_height }}" alt="" loading="lazy"></td>
+            <td data-label="Gatunek">
+              {% if guide.is_published %}
+                <a href="{% url 'education:species' slug=guide.slug %}">{{ guide.name }}</a>
+              {% else %}
+                {{ guide.name }}
+              {% endif %}
+              <br><i class="muted">{{ guide.latin_name }}</i>
+            </td>
+            <td data-label="Kolejność">{{ guide.position }}</td>
+            <td data-label="Status">{% if guide.is_published %}✅ Opublikowany{% else %}🙈 Ukryty{% endif %}</td>
+            <td class="actions">
+              <div class="row">
+                <a class="btn btn-ghost" href="{% url 'panel:edit-species' guide_id=guide.pk %}">Edytuj</a>
+                <form method="post" action="{% url 'panel:toggle-species' guide_id=guide.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-ghost">
+                    {% if guide.is_published %}Ukryj{% else %}Opublikuj{% endif %}
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="muted">Nie ma jeszcze żadnego gatunku.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
