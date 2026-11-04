@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "coordinator",
     "education",
     "activity",
+    "gamification",
 ]
 
 MIDDLEWARE = [

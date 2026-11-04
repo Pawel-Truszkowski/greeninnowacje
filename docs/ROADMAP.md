@@ -115,14 +115,14 @@ Rola koordynatora; powiadomienia w aplikacji i Web Push; tryb offline (PWA + syn
 
 ### Luki względem „Prototypu drugiego” (feedback Greenowacji, 4.11)
 - [x] Monitoring aktywności (logowania, interakcje) — wyżej
-- [ ] **Grywalizacja** — odznaki/punkty liczone z `activity_events`
-- [ ] **Wersja APK** — TWA (Bubblewrap): manifest, minimalny Service Worker, `assetlinks.json`; wymaga docelowej domeny z HTTPS (kwestia nr 2)
+- [x] **Grywalizacja** (4.11) — app `gamification`, strona `/osiagniecia` (w menu dla zalogowanych) i `GET /api/me/achievements`. Poziomy (🌰 Nasiono → 🌲 Dąb) z punktów, 10 odznak, ranking 30 dni. Liczone z tabel domenowych (podlania, drzewa, opieka, zdjęcia), **nie** z `activity_events` — dziennik jest czyszczony po roku, a poziom nie może spadać. Podlanie liczy się raz na drzewo dziennie (drzewo-dzień), więc wielokrotne klikanie nic nie daje. Zdobyte odznaki zapisane w `user_badges` (zostają na zawsze), przyznawane w transakcji akcji; toast „🏅 Nowa odznaka!” raz. Ranking: tylko zalogowani, tylko `display_name`, bez kont admina. Przy okazji toasty w `base.html` układają się w stos (wcześniej drugi komunikat zasłaniał pierwszy).
+- [ ] **„APK” — do wyjaśnienia z Greenowacjami**: plik instalacyjny na Androida (TWA/Bubblewrap; wymaga domeny z HTTPS, kwestia nr 2) czy wersjonowanie aplikacji (numer wersji w stopce, `CHANGELOG.md`, tagi i GitHub Releases)
 - [ ] Filmy zarządzane z panelu (dziś jeden film jako plik statyczny)
 
 ---
 
 ## Tempo
-M1 zamknięty 30.09 (plan: 30.09), M2 zamknięty 25.09 (plan: 1–7.10) — jesteśmy przed harmonogramem. Testów: 1205.
+M1 zamknięty 30.09 (plan: 30.09), M2 zamknięty 25.09 (plan: 1–7.10) — jesteśmy przed harmonogramem. Testów: 1288.
 
 ## Otwarte kwestie (do mentora lub klienta)
 1. **Frontend:** szablony Django sprawdzają się w praktyce (mapa, panel, widok mobilny). Warto to formalnie potwierdzić z mentorem i zamknąć temat.

@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from activity.models import ActivityEvent
 from activity.services import record
 from core.ratelimit import rate_limit
+from gamification.views import announce_new_badges
 
 from .forms import PhotoForm, TreeRegistrationForm
 from .images import InvalidImage
@@ -96,6 +97,7 @@ def water_tree(request, tree_id):
         return _back_to(request, tree)
     record_watering(tree, request.user)
     messages.success(request, WATERING_THANKS)
+    announce_new_badges(request)
     return _back_to(request, tree)
 
 
@@ -109,6 +111,7 @@ def take_care(request, tree_id):
         messages.error(request, str(conflict))
     else:
         messages.success(request, "Dziękujemy! Opiekujesz się tym drzewem 💚")
+        announce_new_badges(request)
     return redirect("trees:card", tree_id=tree.pk)
 
 
@@ -185,6 +188,7 @@ def register_tree_view(request):
         else:
             messages.success(request, REGISTERED_MESSAGE)
             _attach_registration_photo(request, tree, form.cleaned_data.get("photo"))
+            announce_new_badges(request)
             return redirect("trees:card", tree_id=tree.pk)
 
     context = {
@@ -220,6 +224,7 @@ def add_tree_photo(request, tree_id):
         messages.error(request, str(problem))
     else:
         messages.success(request, "Dziękujemy! Zdjęcie zostało dodane 🌱")
+        announce_new_badges(request)
     return redirect("trees:card", tree_id=tree.pk)
 
 

@@ -17,6 +17,7 @@ from accounts.permissions import coordinator_localities
 from activity.models import ActivityEvent
 from activity.services import record
 from core.models import load_drought_config
+from gamification.services import award_badges
 from notifications.services import notify_urgent
 from weather.services import backfill_locality
 
@@ -94,6 +95,7 @@ def record_watering(tree, user, watered_at=None):
     )
     status = recompute_tree_status(tree)
     record(ActivityEvent.Kind.WATERING, user=user, tree=tree)
+    award_badges(user)
     return watering, status
 
 
@@ -104,6 +106,8 @@ def assign_caretaker(tree, user):
             assignment = Assignment.objects.create(tree=tree, user=user)
             # Inside the block: a lost race rolls the event back with the assignment.
             record(ActivityEvent.Kind.CARE_TAKEN, user=user, tree=tree)
+            # The caretaker's badge, also when a coordinator made the assignment.
+            award_badges(user)
             return assignment
     except IntegrityError as error:
         raise CaretakerConflict("To drzewo ma już aktywnego opiekuna.") from error
@@ -310,6 +314,7 @@ def register_tree(user, *, locality_name=None, force=False, **fields):
     tree = Tree.objects.create(created_by=user, locality=locality, **fields)
     recompute_tree_status(tree)
     record(ActivityEvent.Kind.TREE_REGISTERED, user=user, tree=tree)
+    award_badges(user)
     return tree
 
 
@@ -407,6 +412,7 @@ def add_photo(tree, user, upload):
             height=processed.height,
         )
         record(ActivityEvent.Kind.PHOTO_ADDED, user=user, tree=tree)
+        award_badges(user)
     return photo
 
 
