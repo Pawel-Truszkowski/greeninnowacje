@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Osiągnięcia{% endblock %}
+
+{% block content %}
+<main class="page">
+  {% include "includes/logged_in_pill.html" %}
+  <h1>Osiągnięcia 🏅</h1>
+
+  <section class="card level-card" aria-labelledby="level-heading">
+    <div class="level-icon" aria-hidden="true">{{ level.icon }}</div>
+    <div class="level-body">
+      <h2 id="level-heading">Poziom {{ level.number }}: {{ level.name }}</h2>
+      <p class="level-points"><strong>{{ points }}</strong> pkt</p>
+      {% if level.next_threshold %}
+        {# <progress>, not a width: no style= anywhere, so a strict CSP stays possible. #}
+        <progress class="level-progress" value="{{ level.progress }}" max="{{ level.span }}"
+                  aria-label="Postęp do poziomu {{ level.next_name }}">{{ level.progress }} z {{ level.span }}</progress>
+        <p class="muted tight">Jeszcze {{ level.to_next }} pkt do poziomu „{{ level.next_name }}”.</p>
+      {% else %}
+        <p class="muted tight">To najwyższy poziom. Dziękujemy za całą tę wodę! 🌲</p>
+      {% endif %}
+    </div>
+  </section>
+
+  {% if not points %}
+    <div class="card empty-state">
+      <div class="art">🌱</div>
+      <h2>Zacznij zbierać punkty</h2>
+      <p class="muted">Podlej drzewo, zaopiekuj się nim albo zarejestruj nowe — pierwsza odznaka czeka.</p>
+      <a class="btn btn-primary" href="{% url 'trees:map' %}">Znajdź drzewo na mapie</a>
+    </div>
+  {% endif %}
+
+  <section class="card" aria-labelledby="badges-heading">
+    <h2 id="badges-heading">Odznaki <span class="muted">({{ earned_count }} z {{ badges|length }})</span></h2>
+    <ul class="badge-grid">
+      {% for item in badges %}
+        <li class="badge-tile{% if item.earned %} earned{% else %} locked{% endif %}">
+          <span class="badge-icon" aria-hidden="true">{% if item.earned %}{{ item.badge.icon }}{% else %}🔒{% endif %}</span>
+          <span class="badge-name">{{ item.badge.name }}{% if item.new %} <span class="badge-new">Nowa!</span>{% endif %}</span>
+          <span class="badge-how">{{ item.badge.how }}</span>
+          <span class="badge-state">{% if item.earned %}✔ Zdobyta {{ item.awarded_at|date:"j E Y" }}{% else %}Jeszcze nie zdobyta{% endif %}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card" aria-labelledby="ranking-heading">
+    <h2 id="ranking-heading">Ranking — ostatnie {{ ranking.days }} dni</h2>
+    <p class="muted tight">Punkty z ostatnich {{ ranking.days }} dni: podlanie drzewa (raz dziennie na drzewo), opieka, rejestracja i zdjęcia.</p>
+    {% if ranking.rows %}
+      <div class="table-wrap">
+        <table class="data ranking">
+          <thead><tr><th scope="col">Miejsce</th><th scope="col">Osoba</th><th scope="col">Punkty</th></tr></thead>
+          <tbody>
+            {% for row in ranking.rows %}
+              <tr{% if row.is_me %} class="me" aria-current="true"{% endif %}>
+                <td>{% if row.rank == 1 %}🥇{% elif row.rank == 2 %}🥈{% elif row.rank == 3 %}🥉{% else %}{{ row.rank }}.{% endif %}</td>
+                <td>{{ row.display_name }}{% if row.is_me %} (Ty){% endif %}</td>
+                <td>{{ row.points }}</td>
+              </tr>
+            {% endfor %}
+            {% if ranking.me %}
+              <tr class="gap" aria-hidden="true"><td colspan="3">…</td></tr>
+              <tr class="me" aria-current="true">
+                <td>{{ ranking.me.rank }}.</td>
+                <td>{{ ranking.me.display_name }} (Ty)</td>
+                <td>{{ ranking.me.points }}</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+      {% if not ranking.ranked and not user.is_app_admin %}
+        <p class="muted">Nie masz jeszcze punktów z ostatnich {{ ranking.days }} dni — jedno podlanie i jesteś w rankingu.</p>
+      {% endif %}
+    {% else %}
+      <p class="muted">W ostatnich {{ ranking.days }} dniach nikt jeszcze nie zdobył punktów. Możesz być pierwszą osobą w rankingu! 💧</p>
+    {% endif %}
+    {% if user.is_app_admin %}
+      <p class="muted">Konta administratorów nie biorą udziału w rankingu.</p>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

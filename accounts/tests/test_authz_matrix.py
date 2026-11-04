@@ -89,6 +89,19 @@ ENDPOINTS = [
         {"anonymous": 403, "volunteer": 400, "coordinator": 400, "admin": 400},
     ),
     ("get", "trees:my", {}, {"anonymous": 302, "volunteer": 200, "coordinator": 200, "admin": 200}),
+    # Achievements: one's own level and badges, plus a ranking of display names — logged-in only.
+    (
+        "get",
+        "gamification:achievements",
+        {},
+        {"anonymous": 302, "volunteer": 200, "coordinator": 200, "admin": 200},
+    ),
+    (
+        "get",
+        "me-api:achievements",
+        {},
+        {"anonymous": 403, "volunteer": 200, "coordinator": 200, "admin": 200},
+    ),
     (
         "get",
         "trees:register",

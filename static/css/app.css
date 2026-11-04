@@ -424,11 +424,24 @@ table.data td {
 
 /* ---------- toast ---------- */
 
-#toast {
+/* A stack, not one #toast: an action can leave two messages (thanks + a new badge), and
+   two fixed elements on the same spot would hide one behind the other. */
+.toast-stack {
   position: fixed;
   left: 50%;
   bottom: 96px;
-  transform: translateX(-50%) translateY(20px);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: 90vw;
+  pointer-events: none;
+  z-index: 2000;
+}
+
+.toast {
   background: var(--green-900);
   color: #fff;
   font-weight: 700;
@@ -436,14 +449,8 @@ table.data td {
   border-radius: 999px;
   box-shadow: var(--shadow-lg);
   opacity: 0;
-  pointer-events: none;
-  transition: opacity .25s ease, transform .25s ease;
-  z-index: 2000;
-  max-width: 90vw;
   text-align: center;
 }
-
-#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* ---------- modal ---------- */
 
@@ -803,12 +810,12 @@ input[aria-invalid="true"] { border-color: var(--urgent); }
 
 /* ---------- server-rendered toast (no JS: shows, then fades out) ---------- */
 
-#toast.auto { animation: toast-lifecycle 4.5s ease forwards; }
+.toast.auto { animation: toast-lifecycle 4.5s ease forwards; }
 @keyframes toast-lifecycle {
-  0%   { opacity: 0; transform: translateX(-50%) translateY(20px); }
-  8%   { opacity: 1; transform: translateX(-50%) translateY(0); }
-  85%  { opacity: 1; transform: translateX(-50%) translateY(0); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(20px); visibility: hidden; }
+  0%   { opacity: 0; transform: translateY(20px); }
+  8%   { opacity: 1; transform: translateY(0); }
+  85%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(20px); visibility: hidden; }
 }
 
 .app-header nav .link-button {
@@ -1367,3 +1374,72 @@ input[type="date"] {
 .activity-axis { display: flex; justify-content: space-between; margin: 4px 0 0; font-size: .8rem; }
 .activity-legend { list-style: none; padding: 0; margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .9rem; }
 .activity-legend .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; }
+
+/* ---------- achievements (gamification) ---------- */
+
+.level-card { display: flex; gap: 16px; align-items: center; }
+.level-icon { font-size: 3rem; line-height: 1; }
+.level-body { flex: 1; min-width: 0; }
+.level-body h2 { margin: 0; }
+.level-points { margin: 2px 0 8px; font-size: 1.1rem; }
+.level-points strong { font-size: 1.6rem; color: var(--green-800); }
+.level-progress {
+  width: 100%;
+  height: 14px;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  background: var(--green-100);
+  overflow: hidden;
+}
+.level-progress::-webkit-progress-bar { background: var(--green-100); border-radius: 999px; }
+.level-progress::-webkit-progress-value { background: var(--green-600); border-radius: 999px; }
+.level-progress::-moz-progress-bar { background: var(--green-600); border-radius: 999px; }
+
+.badge-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.badge-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border-radius: var(--radius);
+  border: 2px solid var(--green-100);
+  background: var(--paper);
+}
+.badge-tile.earned { border-color: var(--green-600); background: var(--green-50); }
+.badge-tile.locked { border-style: dashed; border-color: var(--line); color: var(--ink-soft); }
+.badge-tile.locked .badge-icon { filter: grayscale(1); opacity: .6; }
+.badge-icon { font-size: 2.2rem; line-height: 1.1; }
+.badge-name { font-weight: 800; }
+.badge-how { font-size: .85rem; color: var(--ink-soft); }
+.badge-state { font-size: .8rem; font-weight: 700; }
+.badge-tile.earned .badge-state { color: var(--green-700); }
+.badge-new {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--soon-bg);
+  color: var(--soon);
+  font-size: .75rem;
+}
+
+table.ranking tr.me td { background: var(--green-50); font-weight: 800; }
+table.ranking tr.gap td { text-align: center; color: var(--ink-soft); }
+
+/* Three narrow columns fit a phone: keep the ranking a real table instead of the stacked
+   cards the panel tables turn into below 640 px. */
+@media (max-width: 640px) {
+  table.data.ranking { display: table; }
+  table.data.ranking thead { display: table-header-group; }
+  table.data.ranking tbody { display: table-row-group; }
+  table.data.ranking tr { display: table-row; padding: 0; }
+}

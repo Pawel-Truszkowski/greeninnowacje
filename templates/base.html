@@ -37,6 +37,8 @@
       <a href="{{ register_url }}" {% if request.path == register_url %}class="active" aria-current="page"{% endif %}>+ Drzewo</a>
       {% url 'trees:my' as my_url %}
       <a href="{{ my_url }}" {% if request.path == my_url %}class="active" aria-current="page"{% endif %}>Moje drzewa</a>
+      {% url 'gamification:achievements' as achievements_url %}
+      <a href="{{ achievements_url }}" {% if request.path == achievements_url %}class="active" aria-current="page"{% endif %}>Osiągnięcia</a>
       {% url 'notifications:list' as notices_url %}
       <a href="{{ notices_url }}" {% if request.path == notices_url %}class="active" aria-current="page"{% endif %}>Powiadomienia{% if unread_notifications %}<span class="notification-badge">{{ unread_notifications }}</span>{% endif %}</a>
       {% if user.role == 'coordinator' or user.is_app_admin %}
@@ -69,9 +71,13 @@
        alt="Fundusze Europejskie dla Rozwoju Społecznego, Rzeczpospolita Polska, Dofinansowane przez Unię Europejską, SENSE">
 </footer>
 
-{% for message in messages %}
-  <div id="toast" class="auto" role="status">{{ message }}</div>
-{% endfor %}
+{% if messages %}
+  <div class="toast-stack">
+    {% for message in messages %}
+      <div class="toast auto" role="status">{{ message }}</div>
+    {% endfor %}
+  </div>
+{% endif %}
 
 {% block scripts %}{% endblock %}
 </body>
