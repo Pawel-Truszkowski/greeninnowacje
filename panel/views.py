@@ -5,13 +5,12 @@ the project — the four tabs the PoC showed and the client accepted.
 """
 
 from django.contrib import messages
-from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from accounts.models import User
 from accounts.permissions import app_admin_required
+from activity.selectors import activity_summary
 from education.models import SpeciesGuide
 from education.services import save_guide, toggle_published
 from education.views import guide_image_response
@@ -19,7 +18,7 @@ from trees.models import Tree, TreePhoto
 from trees.services import delete_photo, recompute_all
 
 from .forms import SpeciesGuideForm, ThresholdsForm, TreeAdminForm, UserAdminForm
-from .selectors import ACTIVITY_DAYS, dashboard_stats, recent_photos
+from .selectors import dashboard_stats, recent_photos, user_trees, users_with_tree_counts
 
 
 @app_admin_required
@@ -51,12 +50,7 @@ def recompute_now(request):
 
 @app_admin_required
 def users(request):
-    from datetime import timedelta
-
-    month_ago = timezone.now() - timedelta(days=ACTIVITY_DAYS)
-    people = User.objects.annotate(
-        waterings_30=Count("waterings", filter=Q(waterings__watered_at__gte=month_ago))
-    ).order_by("display_name")
+    people = users_with_tree_counts()
     return render(request, "panel/users.html", {"users": people, "tab": "users"})
 
 
@@ -71,7 +65,8 @@ def edit_user(request, user_id):
             return redirect("panel:users")
         for error in form.non_field_errors():
             messages.error(request, error)
-    return render(request, "panel/user_form.html", {"form": form, "person": person, "tab": "users"})
+    context = {"form": form, "person": person, "trees": user_trees(person), "tab": "users"}
+    return render(request, "panel/user_form.html", context)
 
 
 @app_admin_required
@@ -121,6 +116,42 @@ def toggle_archive(request, tree_id):
         f"Drzewo {'zarchiwizowane' if archiving else 'przywrócone'}: {tree.species}.",
     )
     return redirect("panel:trees")
+
+
+CHART_WIDTH = 300
+CHART_HEIGHT = 90
+CHART_SLOT = CHART_WIDTH / 30
+
+
+def activity_chart(daily):
+    """Bar geometry for the 30-day chart: two bars per day, heights as SVG attributes (CSP)."""
+    peak = max([1] + [max(day["logins"], day["interactions"]) for day in daily])
+    bar = CHART_SLOT * 0.4
+    bars = []
+    for index, day in enumerate(daily):
+        for offset, key in ((0.1, "logins"), (0.5, "interactions")):
+            height = day[key] / peak * (CHART_HEIGHT - 2)
+            # Strings, not floats: the Polish locale renders 90.0 as "90,0", which SVG rejects.
+            bars.append(
+                {
+                    "x": f"{index * CHART_SLOT + offset * CHART_SLOT:.2f}",
+                    "y": f"{CHART_HEIGHT - height:.2f}",
+                    "width": f"{bar:.2f}",
+                    "height": f"{height:.2f}",
+                    "kind": key,
+                    "day": day["day"],
+                    "value": day[key],
+                }
+            )
+    return {"bars": bars, "width": CHART_WIDTH, "height": CHART_HEIGHT, "peak": peak}
+
+
+@app_admin_required
+def activity(request):
+    """Who logs in and what they do with the trees (Greenowacje: „monitoring aktywności")."""
+    summary = activity_summary()
+    context = {"summary": summary, "chart": activity_chart(summary["daily"]), "tab": "activity"}
+    return render(request, "panel/activity.html", context)
 
 
 @app_admin_required

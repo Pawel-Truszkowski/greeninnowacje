@@ -15,6 +15,7 @@ from django.db.models import OuterRef, Subquery
 from django.http import StreamingHttpResponse
 from django.utils import timezone
 
+from activity.models import ActivityEvent
 from trees.models import Assignment, Tree, Watering
 from trees.status_display import STATUS_DISPLAY
 from weather.models import WeatherDaily
@@ -39,6 +40,7 @@ TREES_HEADER = [
 ]
 WATERINGS_HEADER = ["drzewo", "miejscowość", "gatunek", "data podlania", "wolontariusz"]
 WEATHER_HEADER = ["miejscowość", "dzień", "opad [mm]", "temp. max [°C]", "źródło"]
+ACTIVITY_HEADER = ["kiedy", "rodzaj", "użytkownik", "drzewo", "miejscowość"]
 
 
 def format_value(value):
@@ -129,12 +131,30 @@ def weather_rows():
     )
 
 
+def activity_rows():
+    """The activity log, newest first. Anonymous rows (card views, failed logins) have no person."""
+    events = ActivityEvent.objects.select_related("user", "tree__locality").order_by(
+        "-created_at", "-id"
+    )
+    return (
+        [
+            event.created_at,
+            event.get_kind_display(),
+            event.user.display_name if event.user else "",
+            event.tree_id,
+            event.tree.locality.name if event.tree else "",
+        ]
+        for event in events.iterator()
+    )
+
+
 # URL segment → (filename stem, header, rows). Keeping the three together is what stops a
 # header drifting away from the generator that fills it, or a filename from the dataset.
 DATASETS = {
     "trees": ("drzewa", TREES_HEADER, trees_rows),
     "waterings": ("podlania", WATERINGS_HEADER, waterings_rows),
     "weather": ("pogoda", WEATHER_HEADER, weather_rows),
+    "activity": ("aktywnosc", ACTIVITY_HEADER, activity_rows),
 }
 
 

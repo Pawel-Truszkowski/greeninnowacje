@@ -1358,3 +1358,12 @@ input[type="date"] {
 }
 .species-preview img + img { max-width: 96px; }
 .species-preview figcaption { flex-basis: 100%; }
+
+/* ---------- activity chart (panel; SVG geometry as attributes, CSP-safe) ---------- */
+.activity-chart { padding-top: 4px; }
+.activity-svg { display: block; width: 100%; height: 120px; }
+.activity-svg .bar-logins, .swatch-logins { fill: #1976d2; background: #1976d2; }
+.activity-svg .bar-interactions, .swatch-interactions { fill: var(--green-600); background: var(--green-600); }
+.activity-axis { display: flex; justify-content: space-between; margin: 4px 0 0; font-size: .8rem; }
+.activity-legend { list-style: none; padding: 0; margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .9rem; }
+.activity-legend .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; }

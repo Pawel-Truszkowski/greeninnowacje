@@ -14,6 +14,7 @@ urlpatterns = [
     path("drzewa/<uuid:tree_id>", views.edit_tree, name="edit-tree"),
     path("drzewa/<uuid:tree_id>/archiwizuj", views.toggle_archive, name="toggle-archive"),
     path("eksport", views.export, name="export"),
+    path("aktywnosc", views.activity, name="activity"),
     path("zdjecia", views.photos, name="photos"),
     path("zdjecia/<uuid:photo_id>/usun", views.remove_photo, name="remove-photo"),
     path("gatunki", views.species_list, name="species"),
@@ -33,4 +34,6 @@ api_urlpatterns = [
     path("export/trees.csv", api.trees_csv, name="export-trees"),
     path("export/waterings.csv", api.waterings_csv, name="export-waterings"),
     path("export/weather.csv", api.weather_csv, name="export-weather"),
+    path("export/activity.csv", api.activity_csv, name="export-activity"),
+    path("activity", api.activity, name="activity"),
 ]

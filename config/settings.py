@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "panel",
     "coordinator",
     "education",
+    "activity",
 ]
 
 MIDDLEWARE = [
@@ -178,6 +179,9 @@ if not DEBUG:
 # Number of reverse proxies in front of the app that append to X-Forwarded-For
 # (1 behind Caddy). 0 = trust REMOTE_ADDR only; never trust client-supplied headers.
 TRUSTED_PROXY_HOPS = env.int("TRUSTED_PROXY_HOPS", default=0)
+
+# How long login/interaction events are kept before `prune_activity` deletes them (RODO).
+ACTIVITY_RETENTION_DAYS = env.int("ACTIVITY_RETENTION_DAYS", default=365)
 AUTH_RATE_LIMIT = "10/15m"
 WATERING_RATE_LIMIT = "30/m"
 PHOTO_RATE_LIMIT = "20/h"

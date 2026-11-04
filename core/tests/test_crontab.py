@@ -62,6 +62,8 @@ def test_every_scheduled_command_exists_in_django():
         ("recompute_statuses", "7", "0"),
         # 07:30, so the digests are built from statuses recomputed half an hour earlier.
         ("send_digests", "7", "30"),
+        # Retention (RODO): at night, away from the morning jobs.
+        ("prune_activity", "3", "30"),
     ],
 )
 def test_schedule_matches_the_spec(command, hour, minute):
