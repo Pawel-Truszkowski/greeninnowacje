@@ -6,10 +6,11 @@ tree and watering into memory — fine for a demo, wrong for the first thousand 
 
 from datetime import timedelta
 
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Count, Exists, Max, OuterRef, Q
 from django.utils import timezone
 
 from accounts.models import User
+from activity.models import ActivityEvent
 from trees.models import Assignment, Tree, TreePhoto, Watering
 
 RECENT_DAYS = 7
@@ -99,3 +100,63 @@ def recent_photos(limit=PHOTO_LIST_LIMIT):
             :limit
         ]
     )
+
+
+def users_with_tree_counts():
+    """Every account with its registered trees, current care and recent waterings.
+
+    `distinct=True` on each Count: three joins in one query multiply rows, so without it a
+    person with 3 trees and 6 waterings would show 18 of everything.
+    """
+    month_ago = timezone.now() - timedelta(days=ACTIVITY_DAYS)
+    return User.objects.annotate(
+        trees_registered=Count("created_trees", distinct=True),
+        trees_cared=Count(
+            "assignments", filter=Q(assignments__ended_at__isnull=True), distinct=True
+        ),
+        waterings_30=Count(
+            "waterings", filter=Q(waterings__watered_at__gte=month_ago), distinct=True
+        ),
+    ).order_by("display_name")
+
+
+def user_trees(user):
+    """One person's trees for their panel page: current care, registrations, past care.
+
+    `registered` follows `Tree.created_by` — the account that put the tree on the map. The
+    free-text `planted_by` may name somebody without an account, so it is displayed, not
+    matched. Archived trees stay in: this is history, like the CSV export.
+    """
+    month_ago = timezone.now() - timedelta(days=ACTIVITY_DAYS)
+    last_watered = Max("waterings__watered_at")
+
+    caring = list(
+        Tree.objects.filter(assignments__user=user, assignments__ended_at__isnull=True)
+        .select_related("locality")
+        .annotate(last_watered_at=last_watered, cared_since=Max("assignments__started_at"))
+        .order_by("locality__name", "species")
+    )
+    registered = list(
+        Tree.objects.filter(created_by=user).select_related("locality").order_by("-created_at")
+    )
+    past_care = list(
+        Assignment.objects.filter(user=user, ended_at__isnull=False)
+        .select_related("tree__locality")
+        .order_by("-ended_at")
+    )
+    waterings = Watering.objects.filter(user=user).aggregate(
+        total=Count("id"), recent=Count("id", filter=Q(watered_at__gte=month_ago))
+    )
+    activity = ActivityEvent.objects.filter(user=user, created_at__gte=month_ago).aggregate(
+        logins=Count("id", filter=Q(kind=ActivityEvent.Kind.LOGIN)),
+        last_seen=Max("created_at"),
+    )
+    return {
+        "caring": caring,
+        "registered": registered,
+        "past_care": past_care,
+        "waterings_total": waterings["total"],
+        "waterings_30": waterings["recent"],
+        "logins_30": activity["logins"],
+        "last_seen": activity["last_seen"],
+    }

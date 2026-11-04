@@ -7,3 +7,6 @@
 0 5 * * * python manage.py fetch_weather
 0 7 * * * python manage.py recompute_statuses
 30 7 * * * python manage.py send_digests
+
+# Retention (RODO): drop activity events past ACTIVITY_RETENTION_DAYS, at night.
+30 3 * * * python manage.py prune_activity

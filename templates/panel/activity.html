@@ -1,0 +1,58 @@
+{% extends "panel/base_panel.html" %}
+{% block panel %}
+<div class="stat-grid">
+  <div class="stat"><div class="num">{{ summary.logins_7 }}</div><div class="lbl">🔑 Logowania (7 dni)</div></div>
+  <div class="stat"><div class="num">{{ summary.logins_30 }}</div><div class="lbl">🔑 Logowania (30 dni)</div></div>
+  <div class="stat"><div class="num">{{ summary.active_users_7 }}</div><div class="lbl">🙋 aktywnych osób (7 dni)</div></div>
+  <div class="stat"><div class="num">{{ summary.active_users_30 }}</div><div class="lbl">🙋 aktywnych osób (30 dni)</div></div>
+  <div class="stat"><div class="num">{{ summary.signups_30 }}</div><div class="lbl">🎉 nowych kont (30 dni)</div></div>
+  <div class="stat"><div class="num">{{ summary.card_views_30 }}</div><div class="lbl">📱 otwarć karty drzewa z QR (30 dni)</div></div>
+  <div class="stat"><div class="num{% if summary.failed_logins_7 %} soon{% endif %}">{{ summary.failed_logins_7 }}</div><div class="lbl">⚠️ nieudanych logowań (7 dni)</div></div>
+</div>
+
+<div class="card">
+  <h2>Ostatnie 30 dni</h2>
+  <ul class="activity-legend">
+    <li><span class="swatch swatch-logins" aria-hidden="true"></span> logowania</li>
+    <li><span class="swatch swatch-interactions" aria-hidden="true"></span> działania przy drzewach (podlania, rejestracje, zdjęcia, opieka)</li>
+  </ul>
+  <div class="activity-chart">
+    <svg class="activity-svg" viewBox="0 0 {{ chart.width }} {{ chart.height }}" preserveAspectRatio="none"
+         role="img" aria-label="Logowania i działania przy drzewach dzień po dniu, najwięcej {{ chart.peak }} dziennie">
+      {% for bar in chart.bars %}
+        <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}" class="bar-{{ bar.kind }}">
+          <title>{{ bar.day|date:"j E" }}: {% if bar.kind == "logins" %}logowania{% else %}działania{% endif %} — {{ bar.value }}</title>
+        </rect>
+      {% endfor %}
+    </svg>
+    <p class="activity-axis muted"><span>{{ summary.daily.0.day|date:"d.m" }}</span><span>dziś</span></p>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Kto korzysta z aplikacji</h2>
+  <p class="muted tight">Osoby, które coś zrobiły w ostatnich 30 dniach, od najświeższej aktywności.
+    „Działania” to podlania, rejestracje drzew, zdjęcia oraz objęcie i oddanie opieki.</p>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Osoba</th><th>Rola</th><th>Ostatnie logowanie</th><th>Ostatnia aktywność</th><th>Logowania (30 dni)</th><th>Działania (30 dni)</th></tr></thead>
+      <tbody>
+        {% for row in summary.people %}
+          <tr>
+            <td data-label="Osoba"><b>{{ row.user.display_name }}</b></td>
+            <td data-label="Rola">{{ row.user.get_role_display }}</td>
+            <td data-label="Ostatnie logowanie">{{ row.last_login|date:"j E Y, H:i"|default:"—" }}</td>
+            <td data-label="Ostatnia aktywność">{{ row.last_seen|date:"j E Y, H:i" }}</td>
+            <td data-label="Logowania (30 dni)">{{ row.logins_30 }}</td>
+            <td data-label="Działania (30 dni)">{{ row.interactions_30 }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="muted">W ostatnich 30 dniach nikt jeszcze się nie zalogował. 🌱</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="muted tight">Pełny dziennik pobierzesz w zakładce
+    <a href="{% url 'panel:export' %}">Eksport</a>. Zdarzenia starsze niż rok są usuwane automatycznie.</p>
+</div>
+{% endblock %}

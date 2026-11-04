@@ -194,6 +194,25 @@ ENDPOINTS = [
         {},
         {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
     ),
+    # User activity: who logged in and what they did — personal data, admin only.
+    (
+        "get",
+        "panel:activity",
+        {},
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
+    (
+        "get",
+        "admin-api:activity",
+        {},
+        {"anonymous": 403, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
+    (
+        "get",
+        "admin-api:export-activity",
+        {},
+        {"anonymous": 403, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
     # Notices belong to whoever they are about, so every signed-in role sees their own.
     (
         "get",

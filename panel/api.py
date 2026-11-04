@@ -7,6 +7,7 @@ from rest_framework.status import HTTP_400_BAD_REQUEST
 
 from accounts.models import User
 from accounts.permissions import IsAppAdmin
+from activity.selectors import activity_summary
 from trees.models import Tree
 
 from .export import csv_response
@@ -118,3 +119,28 @@ def waterings_csv(request):
 @permission_classes([IsAppAdmin])
 def weather_csv(request):
     return csv_response("weather")
+
+
+@api_view(["GET"])
+@permission_classes([IsAppAdmin])
+def activity_csv(request):
+    return csv_response("activity")
+
+
+@api_view(["GET"])
+@permission_classes([IsAppAdmin])
+def activity(request):
+    """The activity screen as JSON. Names only — e-mails stay on the users list."""
+    data = activity_summary()
+    data["people"] = [
+        {
+            "id": str(row["user"].pk),
+            "display_name": row["user"].display_name,
+            "last_login": row["last_login"],
+            "last_seen": row["last_seen"],
+            "logins_30": row["logins_30"],
+            "interactions_30": row["interactions_30"],
+        }
+        for row in data["people"]
+    ]
+    return Response(data)

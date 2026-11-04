@@ -14,6 +14,8 @@ from django.db.models import BooleanField, F, Max, Value
 from django.utils import timezone
 
 from accounts.permissions import coordinator_localities
+from activity.models import ActivityEvent
+from activity.services import record
 from core.models import load_drought_config
 from notifications.services import notify_urgent
 from weather.services import backfill_locality
@@ -91,6 +93,7 @@ def record_watering(tree, user, watered_at=None):
         tree=tree, user=user, **({"watered_at": watered_at} if watered_at else {})
     )
     status = recompute_tree_status(tree)
+    record(ActivityEvent.Kind.WATERING, user=user, tree=tree)
     return watering, status
 
 
@@ -98,16 +101,22 @@ def assign_caretaker(tree, user):
     """Volunteer takes care of a tree; the DB constraint decides who wins a race."""
     try:
         with transaction.atomic():
-            return Assignment.objects.create(tree=tree, user=user)
+            assignment = Assignment.objects.create(tree=tree, user=user)
+            # Inside the block: a lost race rolls the event back with the assignment.
+            record(ActivityEvent.Kind.CARE_TAKEN, user=user, tree=tree)
+            return assignment
     except IntegrityError as error:
         raise CaretakerConflict("To drzewo ma już aktywnego opiekuna.") from error
 
 
 def release_caretaker(tree, user):
     """End this user's own active assignment. Returns True if there was one."""
-    updated = Assignment.objects.filter(tree=tree, user=user, ended_at__isnull=True).update(
-        ended_at=timezone.now()
-    )
+    with transaction.atomic():
+        updated = Assignment.objects.filter(tree=tree, user=user, ended_at__isnull=True).update(
+            ended_at=timezone.now()
+        )
+        if updated:
+            record(ActivityEvent.Kind.CARE_RELEASED, user=user, tree=tree)
     return bool(updated)
 
 
@@ -151,10 +160,21 @@ def release_caretaker_of(tree, by):
     after what is never deleted (spec §3).
     """
     _require_area(tree, by)
-    updated = Assignment.objects.filter(tree=tree, ended_at__isnull=True).update(
-        ended_at=timezone.now()
-    )
-    return bool(updated)
+    with transaction.atomic():
+        # Read the caretaker first: once `ended_at` is set, "who was it" needs a guess.
+        active = (
+            Assignment.objects.select_for_update()
+            .filter(tree=tree, ended_at__isnull=True)
+            .select_related("user")
+            .first()
+        )
+        if active is None:
+            return False
+        active.ended_at = timezone.now()
+        active.save(update_fields=["ended_at"])
+        # The caretaker's event, not the coordinator's: it is their care that ended.
+        record(ActivityEvent.Kind.CARE_RELEASED, user=active.user, tree=tree)
+    return True
 
 
 def caretaker_of(tree):
@@ -289,6 +309,7 @@ def register_tree(user, *, locality_name=None, force=False, **fields):
     locality = resolve_locality(fields["lat"], fields["lng"], locality_name)
     tree = Tree.objects.create(created_by=user, locality=locality, **fields)
     recompute_tree_status(tree)
+    record(ActivityEvent.Kind.TREE_REGISTERED, user=user, tree=tree)
     return tree
 
 
@@ -377,13 +398,16 @@ def add_photo(tree, user, upload):
 
     # Last, so a refused upload never costs a decode.
     processed = process_upload(upload)
-    return TreePhoto.objects.create(
-        tree=tree,
-        uploaded_by=user,
-        image=processed.file,
-        width=processed.width,
-        height=processed.height,
-    )
+    with transaction.atomic():
+        photo = TreePhoto.objects.create(
+            tree=tree,
+            uploaded_by=user,
+            image=processed.file,
+            width=processed.width,
+            height=processed.height,
+        )
+        record(ActivityEvent.Kind.PHOTO_ADDED, user=user, tree=tree)
+    return photo
 
 
 def delete_photo(photo, user):

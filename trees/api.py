@@ -24,6 +24,8 @@ from rest_framework.status import (
 )
 
 from accounts.permissions import IsVolunteer
+from activity.models import ActivityEvent
+from activity.services import record
 from core.ratelimit import rate_limit
 
 from .forms import TreeRegistrationForm
@@ -131,6 +133,8 @@ def tree_list(request):
 def tree_public_card(request, tree_id):
     """Public card: watering history as dates only, caretaker as a yes/no flag."""
     tree = get_object_or_404(Tree.objects.select_related("locality"), pk=tree_id)
+    if not request.user.is_authenticated:
+        record(ActivityEvent.Kind.CARD_VIEW, tree=tree)
     return Response(public_tree_card(tree))
 
 

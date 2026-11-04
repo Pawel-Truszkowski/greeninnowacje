@@ -7,6 +7,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 
+from activity.models import ActivityEvent
+from activity.services import record
 from core.ratelimit import rate_limit
 
 from .forms import PhotoForm, TreeRegistrationForm
@@ -68,6 +70,8 @@ def tree_card(request, tree_id):
         }
     else:
         context = {"card": public_tree_card(tree), "tree": tree}
+        # A QR scan lands here. Counted without user or IP — only that the card was seen.
+        record(ActivityEvent.Kind.CARD_VIEW, tree=tree)
     return render(request, "trees/tree_card.html", context)
 
 

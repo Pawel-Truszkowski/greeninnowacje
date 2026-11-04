@@ -1,4 +1,5 @@
 {% extends "panel/base_panel.html" %}
+{% load trees_tags %}
 {% block panel %}
 <form class="card" method="post">
   {% csrf_token %}
@@ -14,4 +15,77 @@
     <a class="btn btn-ghost" href="{% url 'panel:users' %}">Anuluj</a>
   </div>
 </form>
+
+<div class="stat-grid">
+  <div class="stat"><div class="num">{{ trees.caring|length }}</div><div class="lbl">💚 pod opieką</div></div>
+  <div class="stat"><div class="num">{{ trees.registered|length }}</div><div class="lbl">🌳 zarejestrowanych drzew</div></div>
+  <div class="stat"><div class="num">{{ trees.waterings_30 }}</div><div class="lbl">💧 podlań (30 dni)</div></div>
+  <div class="stat"><div class="num">{{ trees.waterings_total }}</div><div class="lbl">💧 podlań łącznie</div></div>
+  <div class="stat"><div class="num">{{ trees.logins_30 }}</div><div class="lbl">🔑 logowań (30 dni)</div></div>
+</div>
+<p class="muted tight">
+  Ostatnie logowanie: {{ person.last_login|date:"j E Y, H:i"|default:"nigdy" }} ·
+  ostatnia aktywność: {{ trees.last_seen|date:"j E Y, H:i"|default:"brak w ostatnich 30 dniach" }} ·
+  konto od {{ person.created_at|date:"j E Y" }}
+</p>
+
+<div class="card">
+  <h2>Pod opieką 💚</h2>
+  {% for tree in trees.caring %}
+    <div class="tree-item st-{{ tree.status }}">
+      <div class="info">
+        <a href="{% url 'panel:edit-tree' tree_id=tree.pk %}">{{ tree.species }}</a>
+        <div class="meta">
+          📍 {{ tree.locality.name }} · od {{ tree.cared_since|date:"j E Y" }} ·
+          {% if tree.last_watered_at %}ostatnie podlanie {{ tree.last_watered_at|date:"j E" }}{% else %}jeszcze nie podlewane{% endif %}
+        </div>
+      </div>
+      {% status_badge tree.status %}
+    </div>
+  {% empty %}
+    <p class="muted">Ta osoba nie opiekuje się żadnym drzewem.</p>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h2>Zarejestrowane drzewa 🌳</h2>
+  <p class="muted tight">Drzewa, które ta osoba dodała na mapę. „Kto sadził” to pole opisowe —
+    może wskazywać kogoś bez konta.</p>
+  {% for tree in trees.registered %}
+    <div class="tree-item st-{{ tree.status }}">
+      <div class="info">
+        <a href="{% url 'panel:edit-tree' tree_id=tree.pk %}">{{ tree.species }}</a>
+        <div class="meta">
+          📍 {{ tree.locality.name }} · posadzone {{ tree.planted_on|date:"j E Y" }}
+          {% if tree.planted_by %} · sadził(a): {{ tree.planted_by }}{% endif %}
+          {% if tree.lifecycle == "archived" %} · <b>zarchiwizowane</b>{% endif %}
+        </div>
+      </div>
+      {% status_badge tree.status %}
+    </div>
+  {% empty %}
+    <p class="muted">Ta osoba nie zarejestrowała jeszcze żadnego drzewa.</p>
+  {% endfor %}
+</div>
+
+{% if trees.past_care %}
+  <div class="card">
+    <h2>Wcześniejsza opieka</h2>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Drzewo</th><th>Miejscowość</th><th>Od</th><th>Do</th></tr></thead>
+        <tbody>
+          {% for row in trees.past_care %}
+            <tr>
+              <td data-label="Drzewo"><a href="{% url 'panel:edit-tree' tree_id=row.tree_id %}">{{ row.tree.species }}</a></td>
+              <td data-label="Miejscowość">{{ row.tree.locality.name }}</td>
+              <td data-label="Od">{{ row.started_at|date:"j E Y" }}</td>
+              <td data-label="Do">{{ row.ended_at|date:"j E Y" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
 {% endblock %}

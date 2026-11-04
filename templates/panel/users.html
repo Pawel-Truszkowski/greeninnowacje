@@ -4,7 +4,7 @@
   <h2>Użytkownicy ({{ users|length }})</h2>
   <div class="table-wrap">
     <table class="data">
-      <thead><tr><th>Osoba</th><th>E-mail</th><th>Rola</th><th>Konto</th><th>Podlań (30 dni)</th><th></th></tr></thead>
+      <thead><tr><th>Osoba</th><th>E-mail</th><th>Rola</th><th>Konto</th><th>Ostatnie logowanie</th><th>Zarejestrowane</th><th>Pod opieką</th><th>Podlań (30 dni)</th><th></th></tr></thead>
       <tbody>
         {% for person in users %}
           <tr>
@@ -12,8 +12,11 @@
             <td class="muted" data-label="E-mail">{{ person.email }}</td>
             <td data-label="Rola">{{ person.get_role_display }}</td>
             <td data-label="Konto">{% if person.is_active %}✅ aktywne{% else %}⛔ nieaktywne{% endif %}</td>
+            <td data-label="Ostatnie logowanie">{{ person.last_login|date:"j E Y, H:i"|default:"nigdy" }}</td>
+            <td data-label="Zarejestrowane">{{ person.trees_registered }} 🌳</td>
+            <td data-label="Pod opieką">{{ person.trees_cared }} 💚</td>
             <td data-label="Podlań (30 dni)">{{ person.waterings_30 }}</td>
-            <td class="actions"><a class="btn btn-ghost" href="{% url 'panel:edit-user' user_id=person.pk %}">Edytuj</a></td>
+            <td class="actions"><a class="btn btn-ghost" href="{% url 'panel:edit-user' user_id=person.pk %}">Szczegóły</a></td>
           </tr>
         {% endfor %}
       </tbody>

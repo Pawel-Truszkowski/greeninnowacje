@@ -29,4 +29,12 @@
     nie zero.</p>
   <a class="btn btn-primary" href="{% url 'admin-api:export-weather' %}">Pobierz pogodę (CSV)</a>
 </section>
+
+<section class="card">
+  <h2>Aktywność użytkowników</h2>
+  <p class="muted tight">Dziennik zdarzeń, od najnowszego: logowania, nieudane logowania, nowe
+    konta, podlania, rejestracje drzew, zdjęcia, objęcie i oddanie opieki oraz otwarcia
+    publicznej karty drzewa. Bez adresów IP. Przechowywany przez rok.</p>
+  <a class="btn btn-primary" href="{% url 'admin-api:export-activity' %}">Pobierz aktywność (CSV)</a>
+</section>
 {% endblock %}
