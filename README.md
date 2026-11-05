@@ -4,6 +4,7 @@ Aplikacja webowa dla wolontariuszy opiekujących się młodymi drzewami. Publicz
 karta drzewa dostępna po zeskanowaniu kodu QR, oznaczanie podlania jednym kliknięciem
 i automatyczny status suszy liczony z pogody oraz historii podlewań.
 
+**Wersja:** 2.0.0 („Prototyp drugi”) — historia zmian w [`CHANGELOG.md`](CHANGELOG.md).
 **Stack:** Python 3.14, Django 5.2 LTS + DRF, PostgreSQL 16, Leaflet. Zależności: uv.
 **Plan prac:** [`docs/ROADMAP.md`](docs/ROADMAP.md) · **Wskazówki dla Claude Code:** [`CLAUDE.md`](CLAUDE.md)
 
@@ -34,6 +35,10 @@ Daty liczone są względem dnia uruchomienia, więc demo zawsze wygląda aktualn
 5. **Moje drzewa** (`/moje-drzewa`) — lista od najpilniejszych, podlanie prosto z listy.
 6. **Rejestracja drzewa** (`/rejestracja-drzewa`) — lokalizacja z GPS z korektą pinezki,
    wykrywanie duplikatu bliżej niż 2 m, kod QR na karcie nowego drzewa.
+7. **Osiągnięcia** (`/osiagniecia`) — poziom (🌰 Nasiono → 🌲 Dąb), odznaki i ranking
+   wolontariuszy z 30 dni (tylko po zalogowaniu).
+8. **Baza wiedzy** (`/baza-wiedzy`) — opisy gatunków z infografikami, poradniki sadzenia
+   i pielęgnacji, film instruktażowy. Publiczna; karta drzewa linkuje do opisu swojego gatunku.
 
 ## Panel administratora
 
@@ -41,11 +46,14 @@ Pod `/admin/` (konto z rolą administratora — w danych demo `admin@przyklad.pl
 
 | Zakładka | Zawartość |
 |---|---|
-| Statystyki | drzewa per status i miejscowość, podlania z 7 i 30 dni, aktywni wolontariusze, drzewa bez opiekuna |
+| Statystyki | drzewa per status i miejscowość, podlania z 7 i 30 dni, aktywni wolontariusze, drzewa bez opiekuna; karta „O aplikacji” (wersja, commit, data zbudowania) z linkiem do „Co nowego” (`/admin/wersja`) |
 | Drzewa | filtry, edycja danych, archiwizacja i przywracanie (drzew nie usuwamy) |
-| Użytkownicy | rola i aktywność konta; własnego konta nie można zdegradować ani wyłączyć |
+| Użytkownicy | rola i aktywność konta, ostatnie logowanie, liczba drzew zarejestrowanych i pod opieką; na stronie osoby — lista jej drzew i wcześniejsza opieka. Własnego konta nie można zdegradować ani wyłączyć |
 | Progi suszy | wartości z tabeli `config` + przycisk „Przelicz statusy teraz” |
+| Zdjęcia | moderacja zdjęć drzew dodanych przez wolontariuszy |
 | Gatunki | opisy gatunków w Bazie wiedzy: dodawanie, edycja, ukrywanie; infografika i zdjęcie (PNG/JPEG) zapisywane jako JPEG, zdjęcie przycinane do kadru 4:5 |
+| Aktywność | logowania, nowe konta, działania przy drzewach i otwarcia karty z QR — kafelki 7/30 dni, wykres dzienny, tabela osób. Bez adresów IP |
+| Eksport | CSV (drzewa, podlania, pogoda, aktywność) gotowe do otwarcia w polskim Excelu |
 
 Techniczny Django admin (dla programisty) żyje osobno, pod `DJANGO_ADMIN_URL`.
 
@@ -56,8 +64,10 @@ harmonogram z [`deploy/crontab`](deploy/crontab) w czasie polskim:
 
 | Godzina | Zadanie |
 |---|---|
+| 03:30 | `prune_activity` — usuwa wpisy aktywności starsze niż `ACTIVITY_RETENTION_DAYS` (RODO) |
 | 05:00 | `fetch_weather` — opady z Open-Meteo dla każdej miejscowości |
 | 07:00 | `recompute_statuses` — statusy suszy dla aktywnych drzew |
+| 07:30 | `send_digests` — e-maile o drzewach do podlania (najwyżej 1 dziennie na osobę) |
 
 ```bash
 docker compose logs -f cron                                   # podgląd przebiegów
@@ -103,9 +113,10 @@ Wszystkie zmienne opisuje [`.env.example`](.env.example). Warto zwrócić uwagę
 | `TRUSTED_PROXY_HOPS` | Liczba zaufanych proxy przed aplikacją (1 za Caddy). Decyduje, skąd brane jest IP klienta do limitów prób logowania |
 | `DJANGO_ADMIN_URL` | Ścieżka technicznego Django admina — `/admin/` jest zarezerwowane dla panelu aplikacji |
 | `NOMINATIM_USER_AGENT` | Wymagana przez OSM identyfikacja aplikacji przy geokodowaniu |
+| `ACTIVITY_RETENTION_DAYS` | Ile dni trzymamy dziennik aktywności (domyślnie 365) |
 
-Progi suszy **nie są** zmiennymi środowiskowymi — mieszkają w tabeli `config` i będą
-edytowalne z panelu administratora.
+Progi suszy **nie są** zmiennymi środowiskowymi — mieszkają w tabeli `config` i edytuje się
+je w panelu administratora (zakładka „Progi suszy”).
 
 ## Jak to działa w środku
 
@@ -118,6 +129,14 @@ edytowalne z panelu administratora.
   definiującym, co widzi niezalogowany gość (historia bez imion, opiekun jako tak/nie).
 - Historia podlewań jest **tylko do dopisywania** — pilnuje tego zarówno ORM, jak i trigger
   w PostgreSQL.
+- `gamification/rules.py` — punkty, poziomy i odznaki jako czyste funkcje. Liczone z tabel
+  domenowych (podlania, drzewa, opieka), nie z dziennika aktywności, który jest czyszczony
+  po roku — dzięki temu poziom nigdy nie spada.
+- `activity/services.record()` — jedyne miejsce zapisu dziennika aktywności. Działania przy
+  drzewach zapisują się w tej samej transakcji co sama operacja, więc odrzucona operacja
+  nie zostawia śladu.
+- `core/version.py` — numer wersji z `pyproject.toml` i notatki z `CHANGELOG.md`; strona
+  „Co nowego” w panelu czyta changelog z działającego obrazu.
 
 ## Wdrożenie
 
@@ -193,8 +212,10 @@ wylogowuje, więc żadne hasło do rejestru nie zostaje na serwerze.
 | Etap | Zakres | Stan |
 |---|---|---|
 | M1 | Konta, mapa publiczna, karta drzewa z QR, podlewanie, opieka, rejestracja w terenie | ✅ 30.09 |
-| M2 | Open-Meteo, zadania cykliczne (05:00 i 07:00), panel administratora | ✅ 25.09 |
-| M3 | Powiadomienia e-mail, eksport CSV | w toku |
-| M4 | Utwardzenie produkcyjne, backup, wdrożenie na VPS | |
+| M2 | Open-Meteo, zadania cykliczne, panel administratora | ✅ 25.09 |
+| M3 | Powiadomienia e-mail, eksport CSV | ✅ 29.09 |
+| Etap 2 | Koordynator, powiadomienia w aplikacji, zdjęcia drzew, Baza wiedzy z opisami gatunków | ✅ 30.10 (wersja 1.2.0) |
+| Prototyp drugi | Grywalizacja, monitoring aktywności, drzewa użytkownika w panelu, wersjonowanie | ✅ 5.11 (wersja 2.0.0) |
+| M4 | Utwardzenie produkcyjne, backup, wdrożenie na VPS | w toku — automatyczny deploy wersji demo działa |
 
-463 testy. Szczegóły i otwarte kwestie: [`docs/ROADMAP.md`](docs/ROADMAP.md).
+1314 testów. Szczegóły i otwarte kwestie: [`docs/ROADMAP.md`](docs/ROADMAP.md).
