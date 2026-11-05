@@ -33,6 +33,8 @@ uv run ruff check . && uv run ruff format .
 uv run python manage.py makemigrations --check --dry-run   # CI fails on missing migrations
 ```
 
+Versioning: `version` in `pyproject.toml` is the only source (keep `uv.lock` in sync with `uv lock`); the major number is Greenowacje's prototype (2.x = „Prototyp drugi”), minor = features, patch = fixes. `core/version.py` (stdlib only, CI runs it directly) reads it and cuts the release notes from `CHANGELOG.md` (Polish, one `## [X.Y.Z]` section per version); `core/tests/test_versioning.py` fails when version, lockfile and changelog disagree. The footer shows the number; the panel dashboard shows commit and build time (baked into the image as `APP_COMMIT`/`APP_BUILT_AT` build args) and links „Co nowego” (`/admin/wersja`, `panel/changelog.py`), which renders `CHANGELOG.md` from the running image — escaped, only `**bold**` and `` `code` `` become HTML. The CI `release` job tags `v<version>` and creates a GitHub Release when the version is new — see `README.md` → „Wydanie nowej wersji”.
+
 Scheduled jobs live in `deploy/crontab`, run by a `supercronic` container (`cron` service, same image as the app, `TZ` from the environment). `core/tests/test_crontab.py` ties the schedule to the code — a renamed management command fails the suite instead of failing silently every morning.
 
 Dependencies live in `pyproject.toml` / `uv.lock` (no requirements.txt). CI: `.github/workflows/ci.yml` (ruff, migration check, pytest on Postgres). **A push to `main` deploys**: after the tests, the same workflow builds the image to GHCR and restarts the demo server over SSH (`docker-compose.prod.yml`, `APP_IMAGE=…:sha-<commit>`); secrets live in the GitHub environment `production`, setup steps in `README.md` → „Wdrożenie”.

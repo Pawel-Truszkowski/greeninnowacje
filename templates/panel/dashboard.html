@@ -54,6 +54,16 @@
   {% endfor %}
 </div>
 
+<div class="card app-about">
+  <h2>O aplikacji ℹ️</h2>
+  <dl class="app-about-list">
+    <dt>Wersja</dt><dd><b>{{ app_version }}</b></dd>
+    <dt>Commit</dt><dd><code>{{ app_commit }}</code></dd>
+    {% if app_built_at %}<dt>Zbudowano</dt><dd>{{ app_built_at }}</dd>{% endif %}
+  </dl>
+  <a class="btn btn-secondary" href="{% url 'panel:changelog' %}">Co nowego w tej wersji</a>
+</div>
+
 {% if stats.trees_archived %}
   <p class="muted">Zarchiwizowanych drzew: {{ stats.trees_archived }}.</p>
 {% endif %}

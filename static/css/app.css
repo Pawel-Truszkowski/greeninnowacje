@@ -1443,3 +1443,33 @@ table.ranking tr.gap td { text-align: center; color: var(--ink-soft); }
   table.data.ranking tbody { display: table-row-group; }
   table.data.ranking tr { display: table-row; padding: 0; }
 }
+
+/* ---------- version ---------- */
+
+.app-version {
+  margin: 2px 0 0;
+  text-align: center;
+  font-size: .75rem;
+  color: var(--ink-soft);
+}
+
+.app-about-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+  margin: 0 0 14px;
+}
+.app-about-list dt { font-weight: 700; color: var(--ink-soft); }
+.app-about-list dd { margin: 0; overflow-wrap: anywhere; }
+
+.changelog-release h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.changelog-release h3 { margin: 14px 0 4px; font-size: 1rem; }
+.changelog-items { margin: 0; padding-left: 1.2em; }
+.changelog-items li { margin: 4px 0; }
+.changelog-current {
+  font-size: .8rem;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--ok-bg);
+  color: var(--ok);
+}

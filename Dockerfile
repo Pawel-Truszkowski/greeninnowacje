@@ -47,5 +47,12 @@ RUN mkdir -p /app/staticfiles \
     && chown -R app /app
 USER app
 
+# What this image is, for core/version.py and the admin panel. Set by CI; last, because the
+# values change with every commit and would otherwise rebuild every layer after them.
+ARG APP_COMMIT=dev
+ARG APP_BUILT_AT=
+ENV APP_COMMIT=$APP_COMMIT \
+    APP_BUILT_AT=$APP_BUILT_AT
+
 EXPOSE 8000
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
