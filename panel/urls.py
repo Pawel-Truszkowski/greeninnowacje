@@ -6,6 +6,7 @@ app_name = "panel"
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
+    path("wersja", views.changelog, name="changelog"),
     path("progi", views.thresholds, name="thresholds"),
     path("progi/przelicz", views.recompute_now, name="recompute"),
     path("uzytkownicy", views.users, name="users"),

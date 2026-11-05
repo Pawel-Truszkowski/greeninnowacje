@@ -129,11 +129,15 @@ Jak to działa (`.github/workflows/ci.yml`):
 
 1. **test** — lint, migracje, pytest (jak dla każdej gałęzi).
 2. **image** — tylko `main`: GitHub Actions buduje obraz i wysyła go do GitHub Container
-   Registry z tagiem `sha-<commit>` i `latest`. Serwer (1 GB RAM) niczego nie buduje.
+   Registry z tagami `sha-<commit>`, `latest` i numerem wersji (np. `2.0.0`). Do obrazu trafia
+   też commit i data zbudowania — panel pokazuje je w karcie „O aplikacji”. Serwer (1 GB RAM)
+   niczego nie buduje.
 3. **deploy** — przez SSH: kopiuje `docker-compose.prod.yml`, pobiera obraz, restartuje `app`
    i `cron`, a na koniec sprawdza, czy strona odpowiada. Migracje i pliki statyczne wykonują się
    przy starcie kontenera ([`deploy/entrypoint.sh`](deploy/entrypoint.sh)). Plik `.env` i baza
    na serwerze nie są ruszane.
+4. **release** — gdy wersja w `pyproject.toml` jest nowa: tag `v<wersja>` i GitHub Release
+   z opisem zmian z [`CHANGELOG.md`](CHANGELOG.md). Dla już wydanej wersji nic nie robi.
 
 Ponowne wdrożenie bez nowego commita: zakładka **Actions → CI → Run workflow** (gałąź `main`).
 Powrót do poprzedniej wersji — na serwerze, z tagiem wcześniejszego commita:
@@ -142,6 +146,20 @@ Powrót do poprzedniej wersji — na serwerze, z tagiem wcześniejszego commita:
 APP_IMAGE=ghcr.io/pawel-truszkowski/greeninnowacje:sha-1a2b3c4 \
   docker compose -f docker-compose.prod.yml up -d --no-build
 ```
+
+### Wydanie nowej wersji
+
+Numer wersji ma postać `X.Y.Z`: **X** to prototyp uzgodniony z Greenowacjami (2 — „Prototyp
+drugi”), **Y** rośnie przy nowych funkcjach, **Z** przy poprawkach. Jedynym źródłem numeru jest
+`version` w `pyproject.toml`; stopka aplikacji pokazuje go wszystkim.
+
+1. Podnieś `version` w `pyproject.toml` i uruchom `uv lock` (wersja jest też w `uv.lock`).
+2. Dopisz na górze `CHANGELOG.md` sekcję `## [X.Y.Z] — RRRR-MM-DD` — prostym językiem, dla
+   Greenowacji, nie dla programistów.
+3. Otwórz PR. Po scaleniu do `main` CI wdroży wersję, otaguje ją i opublikuje Release.
+
+Commity bez podniesienia wersji też się wdrażają — wersja zbiera je do najbliższego wydania.
+`core/tests/test_versioning.py` pilnuje, żeby numer, `uv.lock` i `CHANGELOG.md` się zgadzały.
 
 ### Jednorazowa konfiguracja
 

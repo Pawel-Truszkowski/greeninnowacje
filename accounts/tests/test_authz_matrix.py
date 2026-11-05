@@ -207,6 +207,13 @@ ENDPOINTS = [
         {},
         {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
     ),
+    # „Co nowego": the changelog, linked from the panel dashboard.
+    (
+        "get",
+        "panel:changelog",
+        {},
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
     # User activity: who logged in and what they did — personal data, admin only.
     (
         "get",

@@ -1,0 +1,23 @@
+{% extends "panel/base_panel.html" %}
+{% block panel %}
+<p><a href="{% url 'panel:dashboard' %}">‹ Statystyki</a></p>
+
+{% for release in releases %}
+  <section class="card changelog-release" aria-labelledby="v-{{ forloop.counter }}">
+    <h2 id="v-{{ forloop.counter }}">
+      Wersja {{ release.version }}
+      {% if release.version == app_version %}<span class="changelog-current">✔ obecna</span>{% endif %}
+    </h2>
+    {% if release.date %}<p class="muted tight">{{ release.date }}</p>{% endif %}
+    {% for paragraph in release.intro %}<p>{{ paragraph }}</p>{% endfor %}
+    {% for group in release.groups %}
+      {% if group.title %}<h3>{{ group.title }}</h3>{% endif %}
+      <ul class="changelog-items">
+        {% for item in group.items %}<li>{{ item }}</li>{% endfor %}
+      </ul>
+    {% endfor %}
+  </section>
+{% empty %}
+  <div class="card"><p class="muted">Brak opisu zmian.</p></div>
+{% endfor %}
+{% endblock %}

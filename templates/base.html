@@ -69,6 +69,8 @@
 <footer class="funding-bar">
   <img src="{% static 'img/fe-belka.png' %}" width="2050" height="215"
        alt="Fundusze Europejskie dla Rozwoju Społecznego, Rzeczpospolita Polska, Dofinansowane przez Unię Europejską, SENSE">
+  {# Only the number: a tester can quote it in a bug report. Commit and build time: panel. #}
+  <p class="app-version">wersja {{ app_version }}</p>
 </footer>
 
 {% if messages %}

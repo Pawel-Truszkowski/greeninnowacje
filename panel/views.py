@@ -17,6 +17,7 @@ from education.views import guide_image_response
 from trees.models import Tree, TreePhoto
 from trees.services import delete_photo, recompute_all
 
+from .changelog import load_changelog
 from .forms import SpeciesGuideForm, ThresholdsForm, TreeAdminForm, UserAdminForm
 from .selectors import dashboard_stats, recent_photos, user_trees, users_with_tree_counts
 
@@ -24,6 +25,13 @@ from .selectors import dashboard_stats, recent_photos, user_trees, users_with_tr
 @app_admin_required
 def dashboard(request):
     return render(request, "panel/dashboard.html", {"stats": dashboard_stats(), "tab": "stats"})
+
+
+@app_admin_required
+def changelog(request):
+    """„Co nowego": CHANGELOG.md from the running image, so it always matches this version."""
+    context = {"releases": load_changelog(), "tab": "stats"}
+    return render(request, "panel/changelog.html", context)
 
 
 @app_admin_required
