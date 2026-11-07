@@ -8,6 +8,12 @@ app_name = "education"
 urlpatterns = [
     path("baza-wiedzy", views.index, name="index"),
     path("baza-wiedzy/gatunki/<slug:slug>", views.species_detail, name="species"),
+    path("baza-wiedzy/gatunki/<slug:slug>/qr.png", views.species_qr, name="species-qr"),
+    path(
+        "baza-wiedzy/gatunki/<slug:slug>/naklejki",
+        views.species_stickers,
+        name="species-stickers",
+    ),
     path(
         "baza-wiedzy/gatunki/<slug:slug>/<str:kind>.jpg",
         views.species_image,
