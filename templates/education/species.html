@@ -52,6 +52,20 @@
     </details>
   </article>
 
+  {% url 'education:species-qr' slug=guide.slug as qr_url %}
+  <section class="card qr-box" aria-labelledby="species-qr">
+    <h2 id="species-qr" class="tight">Kod QR tego gatunku</h2>
+    <p class="muted tight">Prowadzi na tę stronę — możesz go wydrukować i nakleić na swoje drzewko 🌱</p>
+    <img class="qr-frame" src="{{ qr_url }}" width="160" height="160"
+         alt="Kod QR prowadzący do strony gatunku {{ guide.name }}">
+    <div class="row">
+      <a class="btn btn-secondary" href="{{ qr_url }}?download=1">Pobierz kod QR</a>
+      {% if can_print_stickers %}
+        <a class="btn btn-secondary" href="{% url 'education:species-stickers' slug=guide.slug %}">🖨️ Naklejki do druku</a>
+      {% endif %}
+    </div>
+  </section>
+
   {% if previous and next %}
     <nav class="species-pager" aria-label="Inne gatunki">
       <a class="btn btn-secondary" href="{% url 'education:species' previous.slug %}" rel="prev">‹ {{ previous.name }}</a>

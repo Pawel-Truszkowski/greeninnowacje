@@ -1473,3 +1473,55 @@ table.ranking tr.gap td { text-align: center; color: var(--ink-soft); }
   background: var(--ok-bg);
   color: var(--ok);
 }
+
+/* ---------- species QR stickers (panel, printable A4: 3 × 4) ---------- */
+
+.sticker-sheet {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+.sticker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px;
+  text-align: center;
+  background: var(--paper);
+  border: 1px dashed var(--line);  /* cutting guide */
+  border-radius: var(--radius-sm);
+  color: var(--green-900);
+}
+.sticker-qr {
+  width: 140px;
+  height: auto;
+  image-rendering: pixelated;      /* keep module edges sharp when scaled */
+}
+.sticker-name { font-size: 1rem; line-height: 1.2; }
+.sticker-latin { font-size: .8rem; }
+.sticker-caption { font-size: .8rem; line-height: 1.25; margin-top: 2px; }
+.sticker-address { font-size: .65rem; word-break: break-all; color: var(--green-700); }
+
+@media print {
+  @page { size: A4; margin: 10mm; }
+  .app-header, .funding-bar, .toast-stack, .no-print { display: none !important; }
+  body { background: #fff; }
+  .page { padding: 0; margin: 0; max-width: none; }
+  .sticker-sheet {
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: 68mm;
+    gap: 0;
+  }
+  .sticker {
+    border-radius: 0;
+    break-inside: avoid;
+    justify-content: center;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .sticker-qr { width: 38mm; }
+}

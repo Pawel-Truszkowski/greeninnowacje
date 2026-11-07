@@ -9,6 +9,16 @@ wstecznie, na podstawie historii repozytorium.
 
 Jak wydać nową wersję — `README.md`, sekcja „Wydanie nowej wersji”.
 
+## [2.1.0] — 2026-11-07
+
+### Dodano
+- **Kody QR gatunków** — na stronie każdego gatunku w Bazie wiedzy jest jego kod QR
+  do pobrania, dostępny dla każdego. Koordynatorzy i administratorzy mogą też wydrukować
+  arkusz A4 z 12 naklejkami (kod, nazwa gatunku i podpis „Zeskanuj i dowiedz się, jak dbać
+  o swoje drzewko 🌱”), np. na rozdawane sadzonki, także jeszcze niezarejestrowane
+  w aplikacji. Te same przyciski są w panelu, w zakładce „Gatunki”. Adres strony gatunku
+  się nie zmienia, więc wydrukowane kody działają nawet po zmianie nazwy gatunku.
+
 ## [2.0.0] — 2026-11-05
 
 „Prototyp drugi” — odpowiedź na feedback Greenowacji.
