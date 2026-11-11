@@ -5,6 +5,7 @@ the project — the four tabs the PoC showed and the client accepted.
 """
 
 from django.contrib import messages
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -15,10 +16,16 @@ from education.models import SpeciesGuide
 from education.services import save_guide, toggle_published
 from education.views import guide_image_response
 from trees.models import Tree, TreePhoto
-from trees.services import delete_photo, recompute_all
+from trees.services import archive_trees_of, delete_photo, recompute_all
 
 from .changelog import load_changelog
-from .forms import SpeciesGuideForm, ThresholdsForm, TreeAdminForm, UserAdminForm
+from .forms import (
+    ArchiveUserTreesForm,
+    SpeciesGuideForm,
+    ThresholdsForm,
+    TreeAdminForm,
+    UserAdminForm,
+)
 from .selectors import dashboard_stats, recent_photos, user_trees, users_with_tree_counts
 
 
@@ -73,8 +80,42 @@ def edit_user(request, user_id):
             return redirect("panel:users")
         for error in form.non_field_errors():
             messages.error(request, error)
-    context = {"form": form, "person": person, "trees": user_trees(person), "tab": "users"}
+    trees = user_trees(person)
+    context = {
+        "form": form,
+        "archive_form": ArchiveUserTreesForm(editor=request.user, person=person),
+        "active_registered": sum(
+            tree.lifecycle == Tree.Lifecycle.ACTIVE for tree in trees["registered"]
+        ),
+        "person": person,
+        "trees": trees,
+        "tab": "users",
+    }
     return render(request, "panel/user_form.html", context)
+
+
+@require_POST
+@app_admin_required
+def archive_user_trees(request, user_id):
+    """Archive all of one person's trees, by default closing the account too (anti-spam)."""
+    person = get_object_or_404(User, pk=user_id)
+    form = ArchiveUserTreesForm(request.POST, editor=request.user, person=person)
+    if not form.is_valid():
+        for error in form.non_field_errors():
+            messages.error(request, error)
+        return redirect("panel:edit-user", user_id=person.pk)
+
+    with transaction.atomic():
+        archived = archive_trees_of(person)
+        if form.cleaned_data["deactivate"]:
+            person.is_active = False
+            person.save(update_fields=["is_active"])
+
+    summary = f"Zarchiwizowano drzewa: {archived}."
+    if form.cleaned_data["deactivate"]:
+        summary += " Konto dezaktywowane."
+    messages.success(request, summary)
+    return redirect("panel:edit-user", user_id=person.pk)
 
 
 @app_admin_required

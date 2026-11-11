@@ -123,6 +123,24 @@ class UserAdminForm(forms.ModelForm):
         return cleaned
 
 
+class ArchiveUserTreesForm(forms.Form):
+    """Take everything one account registered off the map — cleaning up fake trees."""
+
+    deactivate = forms.BooleanField(label="Dezaktywuj też konto", required=False, initial=True)
+
+    def __init__(self, *args, editor=None, person=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.editor = editor
+        self.person = person
+
+    def clean(self):
+        cleaned = super().clean()
+        # Same rule as UserAdminForm: locking yourself out takes one click.
+        if cleaned.get("deactivate") and self.editor and self.editor.pk == self.person.pk:
+            raise forms.ValidationError("Nie możesz dezaktywować własnego konta.")
+        return cleaned
+
+
 class TreeAdminForm(forms.ModelForm):
     """Editing a tree (spec §4). Species comes from the catalogue, as in registration."""
 

@@ -21,6 +21,7 @@ from .services import (
     DuplicateTree,
     LocalityUnknown,
     PhotoNotAllowed,
+    RegistrationLimitReached,
     add_photo,
     assign_caretaker,
     can_manage_photos,
@@ -180,6 +181,9 @@ def register_tree_view(request):
                 # A browser cannot refill a file input, so the photo is gone from this form.
                 "photo_lost": bool(form.cleaned_data.get("photo")),
             }
+        except RegistrationLimitReached as limit:
+            # The service owns the wording, so the page and the API say the same thing.
+            messages.error(request, str(limit))
         except LocalityUnknown:
             form.add_error(
                 "locality_name",

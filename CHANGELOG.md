@@ -9,6 +9,18 @@ wstecznie, na podstawie historii repozytorium.
 
 Jak wydać nową wersję — `README.md`, sekcja „Wydanie nowej wersji”.
 
+## [2.2.0] — 2026-11-11
+
+Ochrona mapy przed fikcyjnymi drzewami.
+
+### Dodano
+- **Dzienny limit rejestracji drzew** — wolontariusz może dodać do 20 drzew w ciągu doby.
+  Koordynatorzy i administratorzy nie mają limitu, bo na akcjach sadzenia rejestrują wiele
+  drzew naraz. Liczą się tylko zapisane drzewa, więc błąd w formularzu nie zużywa limitu.
+- **Archiwizacja wszystkich drzew jednej osoby** — na stronie użytkownika w panelu jeden
+  przycisk zdejmuje z mapy wszystkie jej drzewa i od razu (domyślnie) dezaktywuje konto.
+  Podlania i historia zostają; pojedyncze drzewo można przywrócić w zakładce „Drzewa”.
+
 ## [2.0.0] — 2026-11-05
 
 „Prototyp drugi” — odpowiedź na feedback Greenowacji.

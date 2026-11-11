@@ -11,6 +11,11 @@ urlpatterns = [
     path("progi/przelicz", views.recompute_now, name="recompute"),
     path("uzytkownicy", views.users, name="users"),
     path("uzytkownicy/<uuid:user_id>", views.edit_user, name="edit-user"),
+    path(
+        "uzytkownicy/<uuid:user_id>/archiwizuj-drzewa",
+        views.archive_user_trees,
+        name="archive-user-trees",
+    ),
     path("drzewa", views.tree_list, name="trees"),
     path("drzewa/<uuid:tree_id>", views.edit_tree, name="edit-tree"),
     path("drzewa/<uuid:tree_id>/archiwizuj", views.toggle_archive, name="toggle-archive"),
