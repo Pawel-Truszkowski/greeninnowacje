@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Naklejki: {{ guide.name }}{% endblock %}
+
+{% block content %}
+<main class="page wide">
+  <section class="card no-print">
+    <p class="tight"><a href="{% url 'education:species' guide.slug %}">‹ {{ guide.name }}</a></p>
+    <h1 class="tight">Naklejki z kodem QR: {{ guide.name }} 🌱</h1>
+    <p class="muted">Jeden arkusz A4 to {{ stickers|length }} naklejek. Każdy kod prowadzi do strony
+      <a href="{{ page_url }}">{{ page_address }}</a>, gdzie mieszkańcy znajdą wskazówki, jak dbać o swoje drzewko.
+      W oknie drukowania ustaw skalę 100% i wyłącz nagłówki i stopki przeglądarki.</p>
+    <div class="row">
+      <button type="button" class="btn btn-primary" data-print>🖨️ Drukuj</button>
+      <a class="btn btn-secondary" href="{% url 'education:species-qr' slug=guide.slug %}?download=1">Pobierz sam kod QR (PNG)</a>
+    </div>
+  </section>
+
+  <ul class="sticker-sheet" aria-label="Podgląd arkusza naklejek">
+    {% for _ in stickers %}
+      <li class="sticker">
+        <img class="sticker-qr" src="{% url 'education:species-qr' slug=guide.slug %}" width="232" height="232"
+             alt="Kod QR prowadzący do strony gatunku {{ guide.name }}">
+        <strong class="sticker-name">{{ guide.name }}</strong>
+        <i class="sticker-latin">{{ guide.latin_name }}</i>
+        <span class="sticker-caption">Zeskanuj i dowiedz się, jak dbać o swoje drzewko 🌱</span>
+        <span class="sticker-address">{{ page_address }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/print.js' %}"></script>
+{% endblock %}
