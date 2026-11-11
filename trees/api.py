@@ -40,6 +40,7 @@ from .services import (
     DuplicateTree,
     LocalityUnknown,
     PhotoNotAllowed,
+    RegistrationLimitReached,
     add_photo,
     assign_caretaker,
     can_manage_photos,
@@ -242,6 +243,8 @@ def tree_create(request):
             {"errors": {"locality_name": [{"message": str(unknown), "code": "required"}]}},
             status=HTTP_400_BAD_REQUEST,
         )
+    except RegistrationLimitReached as limit:
+        raise Throttled(detail=str(limit)) from limit
 
     return Response(
         {

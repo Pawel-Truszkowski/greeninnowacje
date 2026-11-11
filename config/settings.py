@@ -189,6 +189,9 @@ WATERING_RATE_LIMIT = "30/m"
 PHOTO_RATE_LIMIT = "20/h"
 GEOCODE_RATE_LIMIT = "60/h"
 APPEAL_RATE_LIMIT = "3/d"
+# Trees one volunteer may register in a rolling 24 h; coordinators and admins have no limit.
+# Counted from saved trees in `trees.services.register_tree`, not per request.
+TREE_REGISTRATION_DAILY_LIMIT = env.int("TREE_REGISTRATION_DAILY_LIMIT", default=20)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [

@@ -8,12 +8,14 @@ forgotten in one entry point and remembered in another.
 import logging
 from collections import Counter
 from dataclasses import dataclass
+from datetime import timedelta
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.db.models import BooleanField, F, Max, Value
 from django.utils import timezone
 
-from accounts.permissions import coordinator_localities
+from accounts.permissions import coordinator_localities, is_coordinator
 from activity.models import ActivityEvent
 from activity.services import record
 from core.models import load_drought_config
@@ -246,6 +248,31 @@ class LocalityUnknown(Exception):
     """Reverse geocoding failed and the volunteer did not supply a name."""
 
 
+class RegistrationLimitReached(Exception):
+    """The account registered its daily allowance of trees (anti-spam, see ROADMAP)."""
+
+
+def _check_registration_limit(user):
+    """Raise RegistrationLimitReached when `user` may not register another tree right now.
+
+    Counts the user's own trees with `created_at` in the last 24 h (rolling window), against
+    settings.TREE_REGISTRATION_DAILY_LIMIT. Coordinators and admins are exempt.
+    """
+    if is_coordinator(user):  # admins count as coordinators there
+        return
+
+    limit = settings.TREE_REGISTRATION_DAILY_LIMIT
+    since = timezone.now() - timedelta(days=1)
+    recent = Tree.objects.filter(created_by=user, created_at__gte=since)
+    # Slicing caps the COUNT: the database stops after `limit` rows instead of counting all.
+    if recent[:limit].count() >= limit:
+        raise RegistrationLimitReached(
+            "Dziękujemy za zapał! 🌱 To konto osiągnęło dzienny limit rejestracji drzew "
+            f"({limit}). Kolejne dodasz za kilka godzin — przy większej akcji sadzenia "
+            "poproś o pomoc koordynatora."
+        )
+
+
 def find_duplicate(lat, lng, radius_m=DUPLICATE_RADIUS_M):
     """Return (tree, distance_m) for an active tree within `radius_m`, else None.
 
@@ -303,7 +330,12 @@ def resolve_locality(lat, lng, name=None):
 
 @transaction.atomic
 def register_tree(user, *, locality_name=None, force=False, **fields):
-    """Register a tree: duplicate check, locality, then the tree itself (spec §4)."""
+    """Register a tree: daily limit, duplicate check, locality, then the tree (spec §4).
+
+    The limit comes first and ignores `force`: that flag only means "I know a tree stands
+    nearby", and it is sent by the client, so it must not switch anti-spam off.
+    """
+    _check_registration_limit(user)
     if not force:
         duplicate = find_duplicate(fields["lat"], fields["lng"])
         if duplicate:
@@ -316,6 +348,17 @@ def register_tree(user, *, locality_name=None, force=False, **fields):
     record(ActivityEvent.Kind.TREE_REGISTERED, user=user, tree=tree)
     award_badges(user)
     return tree
+
+
+def archive_trees_of(user):
+    """Archive every active tree `user` registered; return how many changed (anti-spam).
+
+    Like the single-tree archive in the panel, only `lifecycle` changes: waterings and care
+    stay as history, and a tree archived by mistake is restored one by one.
+    """
+    return Tree.objects.filter(created_by=user, lifecycle=Tree.Lifecycle.ACTIVE).update(
+        lifecycle=Tree.Lifecycle.ARCHIVED
+    )
 
 
 @dataclass(frozen=True)

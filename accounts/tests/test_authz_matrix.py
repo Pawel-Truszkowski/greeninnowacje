@@ -361,6 +361,21 @@ GUIDE_ENDPOINTS = [
 ]
 
 
+# Panel pages about one account (kwargs built per test from a fresh volunteer).
+USER_ENDPOINTS = [
+    (
+        "get",
+        "panel:edit-user",
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 200},
+    ),
+    (
+        "post",
+        "panel:archive-user-trees",
+        {"anonymous": 302, "volunteer": 403, "coordinator": 403, "admin": 302},
+    ),
+]
+
+
 @pytest.fixture
 def client_as(client):
     def make(role):
@@ -454,3 +469,14 @@ class TestAppAdminRequired:
 
     def test_admin_allowed(self, request_as):
         assert self.view(request_as("admin")).status_code == 200
+
+
+@pytest.mark.parametrize("role", ROLES)
+@pytest.mark.parametrize(
+    ("method", "name", "expected"),
+    USER_ENDPOINTS,
+    ids=[f"{m.upper()} {n}" for m, n, *_ in USER_ENDPOINTS],
+)
+def test_user_endpoint_access(client_as, role, method, name, expected):
+    url = reverse(name, kwargs={"user_id": UserFactory().pk})
+    assert getattr(client_as(role), method)(url).status_code == expected[role]

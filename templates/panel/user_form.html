@@ -66,6 +66,20 @@
   {% empty %}
     <p class="muted">Ta osoba nie zarejestrowała jeszcze żadnego drzewa.</p>
   {% endfor %}
+
+  {% if active_registered %}
+    <form method="post" action="{% url 'panel:archive-user-trees' user_id=person.pk %}">
+      {% csrf_token %}
+      <h3>Drzewa fikcyjne lub dodane przez pomyłkę?</h3>
+      <p class="muted tight">Zdejmuje z mapy wszystkie aktywne drzewa tej osoby
+        ({{ active_registered }}). Podlania i historia zostają; pojedyncze drzewo przywrócisz
+        w zakładce „Drzewa”.</p>
+      <label class="field">{{ archive_form.deactivate }} {{ archive_form.deactivate.label }}</label>
+      <button type="submit" class="btn btn-secondary">
+        Zarchiwizuj wszystkie drzewa tej osoby ({{ active_registered }})
+      </button>
+    </form>
+  {% endif %}
 </div>
 
 {% if trees.past_care %}

@@ -7,13 +7,21 @@ from decimal import Decimal
 import httpx
 import pytest
 import respx
+from django.contrib.messages import get_messages
 from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
 
+from activity.models import ActivityEvent
 from factories import LocalityFactory, TreeFactory, UserFactory
 from trees.models import Tree
-from trees.services import DuplicateTree, find_duplicate, register_tree, resolve_locality
+from trees.services import (
+    DuplicateTree,
+    RegistrationLimitReached,
+    find_duplicate,
+    register_tree,
+    resolve_locality,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -359,3 +367,122 @@ class TestRegistrationScreenTexts:
         assert "capture=" not in content, (
             "`capture` wymusza aparat i odcina galerię — UI doc §106 chce obu dróg"
         )
+
+
+class TestRegistrationLimit:
+    """A volunteer registers at most N trees in a rolling 24 h (anti-spam, see ROADMAP).
+
+    The rule lives in `register_tree`, so the page and the API share it, and it counts saved
+    trees — a form with a typo or the duplicate question does not use up the allowance.
+    """
+
+    LIMIT = 2
+
+    @pytest.fixture(autouse=True)
+    def small_limit(self, settings):
+        settings.TREE_REGISTRATION_DAILY_LIMIT = self.LIMIT
+
+    @staticmethod
+    def fields(**overrides):
+        """Spread the trees out so the 2 m duplicate check never interferes."""
+        return {
+            "lat": SIERPC[0] + offset_by_metres(500),
+            "lng": SIERPC[1],
+            "species": "Lipa",
+            "planted_on": timezone.localdate(),
+            "planted_by": "",
+            "notes": "",
+            "gps_accuracy_m": None,
+        } | overrides
+
+    @staticmethod
+    def registered_today(user, count, hours_ago=1):
+        TreeFactory.create_batch(
+            count, created_by=user, created_at=timezone.now() - timedelta(hours=hours_ago)
+        )
+
+    def test_volunteer_over_the_limit_is_refused(self):
+        user = UserFactory()
+        self.registered_today(user, self.LIMIT)
+
+        with pytest.raises(RegistrationLimitReached):
+            register_tree(user, **self.fields())
+
+        assert Tree.objects.filter(created_by=user).count() == self.LIMIT
+        assert not ActivityEvent.objects.filter(
+            user=user, kind=ActivityEvent.Kind.TREE_REGISTERED
+        ).exists(), "Odrzucona rejestracja nie zostawia zdarzenia"
+
+    def test_volunteer_under_the_limit_registers(self):
+        user = UserFactory()
+        self.registered_today(user, self.LIMIT - 1)
+
+        register_tree(user, **self.fields())
+
+        assert Tree.objects.filter(created_by=user).count() == self.LIMIT
+
+    def test_window_is_rolling_24_hours(self):
+        user = UserFactory()
+        self.registered_today(user, self.LIMIT, hours_ago=25)
+
+        register_tree(user, **self.fields())
+
+    def test_only_own_trees_count(self):
+        TreeFactory.create_batch(self.LIMIT)  # somebody else's
+
+        register_tree(UserFactory(), **self.fields())
+
+    @pytest.mark.parametrize("role", ["coordinator", "admin"])
+    def test_coordinators_and_admins_have_no_limit(self, role):
+        """Coordinators hand out saplings and may register a whole event at once."""
+        user = UserFactory(role=role)
+        self.registered_today(user, self.LIMIT + 3)
+
+        register_tree(user, **self.fields())
+
+    def test_limit_is_checked_before_asking_nominatim(self, monkeypatch):
+        """No point spending the shared 1 req/s on a tree that will not be saved."""
+
+        def must_not_be_called(lat, lng):
+            raise AssertionError("Nominatim zapytany mimo przekroczonego limitu")
+
+        monkeypatch.setattr("trees.services.reverse_locality", must_not_be_called)
+        user = UserFactory()
+        self.registered_today(user, self.LIMIT)
+
+        with pytest.raises(RegistrationLimitReached):
+            register_tree(user, **self.fields())
+
+    def test_limit_wins_over_the_duplicate_question(self):
+        """Otherwise a spammer is asked "is this the same tree?" and answers with force."""
+        user = UserFactory()
+        self.registered_today(user, self.LIMIT)
+        TreeFactory(lat=SIERPC[0], lng=SIERPC[1])
+
+        with pytest.raises(RegistrationLimitReached):
+            register_tree(user, **self.fields(lat=SIERPC[0], lng=SIERPC[1]))
+
+    def test_api_answers_429_with_a_message(self, client, volunteer):
+        self.registered_today(volunteer, self.LIMIT)
+
+        response = client.post(CREATE_URL, payload(), content_type="application/json")
+
+        assert response.status_code == 429
+        assert response.json()["detail"]
+        assert Tree.objects.filter(created_by=volunteer).count() == self.LIMIT
+
+    def test_api_force_does_not_bypass_the_limit(self, client, volunteer):
+        self.registered_today(volunteer, self.LIMIT)
+
+        response = client.post(CREATE_URL, payload(force=True), content_type="application/json")
+
+        assert response.status_code == 429
+
+    def test_page_shows_an_error_and_keeps_the_form(self, client, volunteer):
+        self.registered_today(volunteer, self.LIMIT)
+
+        response = client.post(PAGE_URL, payload(species="Klon polny"))
+
+        assert response.status_code == 200, "Formularz zostaje, z wpisanymi danymi"
+        assert [m.level_tag for m in get_messages(response.wsgi_request)] == ["error"]
+        assert Tree.objects.filter(created_by=volunteer).count() == self.LIMIT
