@@ -9,6 +9,20 @@ wstecznie, na podstawie historii repozytorium.
 
 Jak wydać nową wersję — `README.md`, sekcja „Wydanie nowej wersji”.
 
+## [2.2.1] — 2026-11-20
+
+Poprawki ochrony przed fikcyjnymi drzewami.
+
+### Poprawiono
+- **Dzienny limit nie da się obejść** wysyłając wiele zgłoszeń naraz — rejestracje jednej
+  osoby są teraz sprawdzane po kolei.
+- **Dezaktywacja konta przy archiwizacji jego drzew** kończy też opiekę tej osoby nad
+  cudzymi drzewami, więc inni wolontariusze mogą je od razu przejąć.
+- Gdy limit jest wyczerpany, a do formularza dołączono zdjęcie, aplikacja mówi, że trzeba
+  je wybrać ponownie.
+- Ujemna wartość `TREE_REGISTRATION_DAILY_LIMIT` zatrzymuje start aplikacji z czytelnym
+  błędem, zamiast psuć każdą rejestrację.
+
 ## [2.2.0] — 2026-11-11
 
 Ochrona mapy przed fikcyjnymi drzewami.
@@ -20,8 +34,6 @@ Ochrona mapy przed fikcyjnymi drzewami.
 - **Archiwizacja wszystkich drzew jednej osoby** — na stronie użytkownika w panelu jeden
   przycisk zdejmuje z mapy wszystkie jej drzewa i od razu (domyślnie) dezaktywuje konto.
   Podlania i historia zostają; pojedyncze drzewo można przywrócić w zakładce „Drzewa”.
-  Dezaktywowana osoba przestaje też opiekować się cudzymi drzewami, więc inni wolontariusze
-  mogą je od razu przejąć.
 
 ## [2.1.0] — 2026-11-07
 

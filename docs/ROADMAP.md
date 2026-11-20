@@ -131,7 +131,7 @@ Rola koordynatora; powiadomienia w aplikacji i Web Push; tryb offline (PWA + syn
 ## Tempo
 M1 zamknięty 30.09 (plan: 30.09), M2 zamknięty 25.09 (plan: 1–7.10) — jesteśmy przed harmonogramem. M3 zamknięty 29.09. Testów: 1376.
 
-Wydania (szczegóły w `CHANGELOG.md`): **1.0.0** (25.09, MVP — „Prototyp pierwszy”), **1.1.0** (1.10, zdjęcia, koordynator, powiadomienia, CSV), **1.2.0** (30.10, Baza wiedzy, gatunki, automatyczny deploy), **2.0.0** (5.11, „Prototyp drugi” — grywalizacja, aktywność, wersjonowanie), **2.1.0** (7.11, kody QR gatunków na naklejki), **2.2.0** (11.11, limit rejestracji drzew, masowa archiwizacja).
+Wydania (szczegóły w `CHANGELOG.md`): **1.0.0** (25.09, MVP — „Prototyp pierwszy”), **1.1.0** (1.10, zdjęcia, koordynator, powiadomienia, CSV), **1.2.0** (30.10, Baza wiedzy, gatunki, automatyczny deploy), **2.0.0** (5.11, „Prototyp drugi” — grywalizacja, aktywność, wersjonowanie), **2.1.0** (7.11, kody QR gatunków na naklejki), **2.2.0** (11.11, limit rejestracji drzew, masowa archiwizacja), **2.2.1** (20.11, poprawki po review: blokada przy limicie, zwolnienie opieki przy dezaktywacji).
 
 ## Otwarte kwestie (do mentora lub klienta)
 1. **Frontend:** szablony Django sprawdzają się w praktyce (mapa, panel, widok mobilny). Warto to formalnie potwierdzić z mentorem i zamknąć temat.
