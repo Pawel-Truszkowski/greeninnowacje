@@ -6,6 +6,7 @@ Drought thresholds are NOT here — they live in the `config` table (core.Config
 from pathlib import Path
 
 import environ
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -192,6 +193,10 @@ APPEAL_RATE_LIMIT = "3/d"
 # Trees one volunteer may register in a rolling 24 h; coordinators and admins have no limit.
 # Counted from saved trees in `trees.services.register_tree`, not per request.
 TREE_REGISTRATION_DAILY_LIMIT = env.int("TREE_REGISTRATION_DAILY_LIMIT", default=20)
+# 0 is a valid emergency switch (volunteers cannot register); a negative value would only
+# crash every registration with a 500, so refuse it at startup instead.
+if TREE_REGISTRATION_DAILY_LIMIT < 0:
+    raise ImproperlyConfigured("TREE_REGISTRATION_DAILY_LIMIT must be 0 or more.")
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [

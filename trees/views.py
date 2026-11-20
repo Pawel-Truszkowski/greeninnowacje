@@ -184,6 +184,12 @@ def register_tree_view(request):
         except RegistrationLimitReached as limit:
             # The service owns the wording, so the page and the API say the same thing.
             messages.error(request, str(limit))
+            if form.cleaned_data.get("photo"):
+                # Same reason as `photo_lost` above: the file input comes back empty.
+                messages.warning(
+                    request,
+                    "Zdjęcie nie zostało zapisane — przy kolejnej próbie wybierz je ponownie.",
+                )
         except LocalityUnknown:
             form.add_error(
                 "locality_name",

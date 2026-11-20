@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.db.models import BooleanField, F, Max, Value
 from django.utils import timezone
@@ -261,6 +262,11 @@ def _check_registration_limit(user):
     if is_coordinator(user):  # admins count as coordinators there
         return
 
+    # Count-then-insert is a race under READ COMMITTED: parallel requests would all see the
+    # same count and all pass. Locking the user's row queues one person's registrations
+    # (until register_tree's transaction ends) without slowing anybody else down.
+    get_user_model().objects.select_for_update().filter(pk=user.pk).exists()
+
     limit = settings.TREE_REGISTRATION_DAILY_LIMIT
     since = timezone.now() - timedelta(days=1)
     recent = Tree.objects.filter(created_by=user, created_at__gte=since)
@@ -359,6 +365,27 @@ def archive_trees_of(user):
     return Tree.objects.filter(created_by=user, lifecycle=Tree.Lifecycle.ACTIVE).update(
         lifecycle=Tree.Lifecycle.ARCHIVED
     )
+
+
+def end_care_of(user):
+    """End every active assignment `user` holds; return how many (account deactivation).
+
+    A disabled account cannot water, yet its open assignment would still block the tree
+    (`one_active_per_tree`) and keep its alerts going nowhere. Rows stay with `ended_at`
+    set, like any released care, and each one leaves a CARE_RELEASED event.
+    """
+    with transaction.atomic():
+        active = list(
+            Assignment.objects.select_for_update()
+            .filter(user=user, ended_at__isnull=True)
+            .select_related("tree")
+        )
+        now = timezone.now()
+        for assignment in active:
+            assignment.ended_at = now
+            assignment.save(update_fields=["ended_at"])
+            record(ActivityEvent.Kind.CARE_RELEASED, user=user, tree=assignment.tree)
+    return len(active)
 
 
 @dataclass(frozen=True)

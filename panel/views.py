@@ -16,7 +16,7 @@ from education.models import SpeciesGuide
 from education.services import save_guide, toggle_published
 from education.views import guide_image_response
 from trees.models import Tree, TreePhoto
-from trees.services import archive_trees_of, delete_photo, recompute_all
+from trees.services import archive_trees_of, delete_photo, end_care_of, recompute_all
 
 from .changelog import load_changelog
 from .forms import (
@@ -105,15 +105,20 @@ def archive_user_trees(request, user_id):
             messages.error(request, error)
         return redirect("panel:edit-user", user_id=person.pk)
 
+    released = 0
     with transaction.atomic():
         archived = archive_trees_of(person)
         if form.cleaned_data["deactivate"]:
             person.is_active = False
             person.save(update_fields=["is_active"])
+            # Their care of other people's trees would otherwise block those trees.
+            released = end_care_of(person)
 
     summary = f"Zarchiwizowano drzewa: {archived}."
     if form.cleaned_data["deactivate"]:
         summary += " Konto dezaktywowane."
+        if released:
+            summary += f" Zakończono opiekę nad drzewami: {released}."
     messages.success(request, summary)
     return redirect("panel:edit-user", user_id=person.pk)
 

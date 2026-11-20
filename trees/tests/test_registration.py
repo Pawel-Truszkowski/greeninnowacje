@@ -8,6 +8,8 @@ import httpx
 import pytest
 import respx
 from django.contrib.messages import get_messages
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
@@ -477,6 +479,27 @@ class TestRegistrationLimit:
         response = client.post(CREATE_URL, payload(force=True), content_type="application/json")
 
         assert response.status_code == 429
+
+    def test_limit_check_locks_the_users_row(self):
+        """Parallel requests must queue: without the lock each one counts the same trees."""
+        user = UserFactory()
+        with CaptureQueriesContext(connection) as queries:
+            register_tree(user, **self.fields())
+
+        locks = [q["sql"] for q in queries if "FOR UPDATE" in q["sql"] and '"users"' in q["sql"]]
+        assert locks, "Brak blokady wiersza użytkownika przed liczeniem drzew"
+
+    def test_page_warns_that_the_photo_was_not_kept(self, client, volunteer):
+        self.registered_today(volunteer, self.LIMIT)
+        buffer = io.BytesIO()
+        Image.new("RGB", (80, 60), "green").save(buffer, "JPEG")
+        buffer.seek(0)
+        buffer.name = "zdjecie.jpg"
+
+        response = client.post(PAGE_URL, payload(photo=buffer))
+
+        levels = [m.level_tag for m in get_messages(response.wsgi_request)]
+        assert levels == ["error", "warning"]
 
     def test_page_shows_an_error_and_keeps_the_form(self, client, volunteer):
         self.registered_today(volunteer, self.LIMIT)
