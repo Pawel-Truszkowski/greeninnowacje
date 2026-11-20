@@ -5,14 +5,18 @@ the account. Trees are archived, never deleted (spec §3), so a mistake is undon
 from `/admin/drzewa`.
 """
 
+from datetime import timedelta
+
 import pytest
 from django.contrib.messages import get_messages
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.models import User
+from activity.models import ActivityEvent
 from factories import TreeFactory, UserFactory
-from trees.models import Tree
-from trees.services import archive_trees_of
+from trees.models import Assignment, Tree
+from trees.services import archive_trees_of, end_care_of
 
 pytestmark = pytest.mark.django_db
 
@@ -53,6 +57,27 @@ class TestService:
     def test_nothing_to_archive(self, spammer):
         assert archive_trees_of(spammer) == 0
 
+    def test_end_care_of_closes_only_this_persons_active_care(self, spammer):
+        cared_for = TreeFactory()
+        Assignment.objects.create(tree=cared_for, user=spammer)
+        past = Assignment.objects.create(
+            tree=TreeFactory(), user=spammer, ended_at=timezone.now() - timedelta(days=3)
+        )
+        someone_elses = Assignment.objects.create(tree=TreeFactory(), user=UserFactory())
+
+        assert end_care_of(spammer) == 1
+
+        assert not Assignment.objects.filter(user=spammer, ended_at__isnull=True).exists()
+        assert Assignment.objects.filter(tree=cared_for).count() == 1, "Historia zostaje"
+        ended_before = past.ended_at
+        past.refresh_from_db()
+        assert past.ended_at == ended_before, "Zakończona opieka nie dostaje nowej daty"
+        someone_elses.refresh_from_db()
+        assert someone_elses.ended_at is None
+        assert ActivityEvent.objects.filter(
+            user=spammer, tree=cared_for, kind=ActivityEvent.Kind.CARE_RELEASED
+        ).exists()
+
 
 class TestPanelAction:
     def test_archives_and_deactivates_by_default(self, client, admin, spammer):
@@ -67,14 +92,29 @@ class TestPanelAction:
         assert not spammer.is_active
         assert [m.level_tag for m in get_messages(response.wsgi_request)] == ["success"]
 
+    def test_deactivation_frees_the_trees_they_cared_for(self, client, admin, spammer):
+        """Otherwise `one_active_per_tree` keeps a real volunteer from taking the tree."""
+        real_tree = TreeFactory()
+        Assignment.objects.create(tree=real_tree, user=spammer)
+
+        client.post(url(spammer), {"deactivate": "on"})
+
+        assert not Assignment.objects.filter(tree=real_tree, ended_at__isnull=True).exists()
+        Assignment.objects.create(tree=real_tree, user=UserFactory())
+
     def test_unticked_checkbox_keeps_the_account(self, client, admin, spammer):
         TreeFactory(created_by=spammer)
+        cared_for = TreeFactory()
+        Assignment.objects.create(tree=cared_for, user=spammer)
 
         client.post(url(spammer), {})
 
         assert lifecycles(spammer) == {Tree.Lifecycle.ARCHIVED}
         spammer.refresh_from_db()
         assert spammer.is_active
+        assert Assignment.objects.filter(
+            tree=cared_for, user=spammer, ended_at__isnull=True
+        ).exists(), "Aktywne konto zachowuje swoją opiekę"
 
     def test_admin_cannot_deactivate_themselves(self, client, admin):
         """Same rule as the user form: locking yourself out takes one click."""

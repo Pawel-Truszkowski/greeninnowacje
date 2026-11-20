@@ -20,6 +20,8 @@ Ochrona mapy przed fikcyjnymi drzewami.
 - **Archiwizacja wszystkich drzew jednej osoby** — na stronie użytkownika w panelu jeden
   przycisk zdejmuje z mapy wszystkie jej drzewa i od razu (domyślnie) dezaktywuje konto.
   Podlania i historia zostają; pojedyncze drzewo można przywrócić w zakładce „Drzewa”.
+  Dezaktywowana osoba przestaje też opiekować się cudzymi drzewami, więc inni wolontariusze
+  mogą je od razu przejąć.
 
 ## [2.1.0] — 2026-11-07
 
