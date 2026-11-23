@@ -1,13 +1,16 @@
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout
+from django.contrib.auth.views import PasswordResetConfirmView
 from django.shortcuts import redirect, render
+from django.urls import reverse_lazy
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from core.ratelimit import rate_limit
 
-from .forms import LoginForm, RegistrationForm
+from . import services
+from .forms import LoginForm, NewPasswordForm, PasswordResetRequestForm, RegistrationForm
 
 RATE_LIMITED_MESSAGE = "Za dużo prób. Odczekaj kilkanaście minut i spróbuj ponownie."
 
@@ -68,3 +71,45 @@ def logout_view(request):
     logout(request)
     messages.success(request, "Wylogowano. Do zobaczenia przy drzewach! 👋")
     return redirect(settings.LOGIN_REDIRECT_URL)
+
+
+@rate_limit("auth-password-reset", auth_rate)
+def password_reset_view(request):
+    if request.user.is_authenticated:
+        return redirect(settings.LOGIN_REDIRECT_URL)
+    form = PasswordResetRequestForm(request.POST or None)
+    status = 200
+    if request.method == "POST":
+        if request.limited:
+            form.add_error(None, RATE_LIMITED_MESSAGE)
+            status = 429
+        elif form.is_valid():
+            services.request_password_reset(form.cleaned_data["email"])
+            # Same redirect whether or not the address has an account (no enumeration).
+            return redirect("accounts:password-reset-sent")
+    return render(request, "accounts/password_reset.html", {"form": form}, status=status)
+
+
+def password_reset_sent_view(request):
+    return render(request, "accounts/password_reset_sent.html")
+
+
+class SetNewPasswordView(PasswordResetConfirmView):
+    """Django's view: moves the token from the URL into the session before showing the form,
+    so it never leaks via Referer or browser history. Logs the user in afterwards; the new
+    password hash ends every other session of this account."""
+
+    form_class = NewPasswordForm
+    template_name = "accounts/password_reset_confirm.html"
+    reset_url_token = "ustaw"  # noqa: S105 — a URL segment replacing the token, not a secret
+    post_reset_login = True
+    success_url = reverse_lazy(settings.LOGIN_REDIRECT_URL)
+
+    def get_user(self, uidb64):
+        # Django's version accepts deactivated accounts too.
+        return services.user_from_uid(uidb64)
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, "Hasło zmienione. Witaj z powrotem! 🌱")
+        return response

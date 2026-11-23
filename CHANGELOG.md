@@ -9,6 +9,22 @@ wstecznie, na podstawie historii repozytorium.
 
 Jak wydać nową wersję — `README.md`, sekcja „Wydanie nowej wersji”.
 
+## [2.3.0] — 2026-11-23
+
+Odzyskiwanie dostępu do konta.
+
+### Dodano
+- **„Nie pamiętasz hasła?”** na stronie logowania: podajesz e-mail, dostajesz link do
+  ustawienia nowego hasła. Link działa przez godzinę i tylko raz, a po zmianie hasła
+  aplikacja od razu Cię loguje i wylogowuje z pozostałych urządzeń.
+- To samo w API: `POST /api/auth/password-reset` i `POST /api/auth/password-reset/confirm`.
+
+### Bezpieczeństwo
+- Odpowiedź jest zawsze taka sama — nie da się sprawdzić, czy dany adres ma konto.
+- Limit prób z jednego adresu IP (jak przy logowaniu) i najwyżej 3 wiadomości na godzinę
+  na jeden adres e-mail.
+- E-mail z linkiem nie zużywa dziennego limitu powiadomień o suchych drzewach.
+
 ## [2.2.1] — 2026-11-20
 
 Poprawki ochrony przed fikcyjnymi drzewami.

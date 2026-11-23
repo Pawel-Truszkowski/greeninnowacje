@@ -13,6 +13,7 @@
     {% include "includes/form_errors.html" %}
     {% include "includes/field.html" with field=form.username %}
     {% include "includes/field.html" with field=form.password %}
+    <p class="forgot-link"><a href="{% url 'accounts:password-reset' %}">Nie pamiętasz hasła?</a></p>
     <button type="submit" class="btn btn-primary block">Zaloguj się</button>
   </form>
 

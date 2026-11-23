@@ -1,6 +1,11 @@
 from django import forms
 from django.contrib.auth import password_validation
-from django.contrib.auth.forms import AuthenticationForm, BaseUserCreationForm, UserChangeForm
+from django.contrib.auth.forms import (
+    AuthenticationForm,
+    BaseUserCreationForm,
+    SetPasswordForm,
+    UserChangeForm,
+)
 
 from .models import User
 
@@ -70,3 +75,23 @@ class LoginForm(AuthenticationForm):
         self.fields["username"].widget = forms.EmailInput(
             attrs={"autocomplete": "email", "autofocus": True}
         )
+
+
+class PasswordResetRequestForm(forms.Form):
+    email = forms.EmailField(
+        label="E-mail",
+        widget=forms.EmailInput(attrs={"autocomplete": "email", "autofocus": True}),
+    )
+
+
+class NewPasswordForm(SetPasswordForm):
+    """Django's SetPasswordForm (runs AUTH_PASSWORD_VALIDATORS against the user) in Polish."""
+
+    error_messages = {"password_mismatch": "Hasła nie są takie same."}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["new_password1"].label = "Nowe hasło"
+        self.fields["new_password1"].help_text = "Min. 10 znaków."
+        self.fields["new_password2"].label = "Powtórz nowe hasło"
+        self.fields["new_password2"].help_text = ""
