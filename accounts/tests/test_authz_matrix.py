@@ -70,6 +70,38 @@ ENDPOINTS = [
         {"anonymous": 200, "volunteer": 302, "coordinator": 302, "admin": 302},
     ),
     (
+        "get",
+        "accounts:password-reset",
+        {},
+        {"anonymous": 200, "volunteer": 302, "coordinator": 302, "admin": 302},
+    ),
+    (
+        "get",
+        "accounts:password-reset-sent",
+        {},
+        {"anonymous": 200, "volunteer": 200, "coordinator": 200, "admin": 200},
+    ),
+    # A bad link renders the "link no longer works" page for everyone.
+    (
+        "get",
+        "accounts:password-reset-confirm",
+        {"uidb64": "xxx", "token": "abc-def"},
+        {"anonymous": 200, "volunteer": 200, "coordinator": 200, "admin": 200},
+    ),
+    # 400: no JSON body — the point is that nobody is turned away by role.
+    (
+        "post",
+        "auth-api:api-password-reset",
+        {},
+        {"anonymous": 400, "volunteer": 400, "coordinator": 400, "admin": 400},
+    ),
+    (
+        "post",
+        "auth-api:api-password-reset-confirm",
+        {},
+        {"anonymous": 400, "volunteer": 400, "coordinator": 400, "admin": 400},
+    ),
+    (
         "post",
         "accounts:logout",
         {},

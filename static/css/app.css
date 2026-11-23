@@ -782,6 +782,9 @@ table.data td {
 .auth-hero p { margin: 0; }
 .btn.block { width: 100%; }
 .center { text-align: center; }
+/* "Nie pamiętasz hasła?" under the login password field; 44 px tall touch target. */
+.forgot-link { text-align: right; margin: -4px 0 12px; }
+.forgot-link a { display: inline-flex; align-items: center; min-height: 44px; }
 
 /* ---------- form errors ---------- */
 

@@ -101,6 +101,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "trees:map"
+# Reset links are single-use anyway (the token hashes the password); one hour limits how
+# long a link sitting in a mailbox stays useful to someone else.
+PASSWORD_RESET_TIMEOUT = 3600
 
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",
