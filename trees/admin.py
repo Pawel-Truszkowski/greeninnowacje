@@ -29,7 +29,7 @@ class TreeAdmin(admin.ModelAdmin):
 class WateringAdmin(admin.ModelAdmin):
     """Read-only — waterings are append-only."""
 
-    list_display = ["watered_at", "tree", "user"]
+    list_display = ["watered_at", "tree", "user", "tree_status"]
     list_select_related = ["tree__locality", "user"]
     date_hierarchy = "watered_at"
 

@@ -9,6 +9,33 @@ wstecznie, na podstawie historii repozytorium.
 
 Jak wydać nową wersję — `README.md`, sekcja „Wydanie nowej wersji”.
 
+## [2.4.0] — 2026-11-24
+
+Więcej odznak — coś nowego do zdobycia przez cały sezon, nie tylko pierwszego dnia.
+
+### Dodano
+- **34 odznaki zamiast 10**, pogrupowane na stronie Osiągnięć: Podlewanie, Regularność,
+  Opieka, Sadzenie, Odkrywanie i Zdjęcia.
+- **Kolejne progi** w znanych seriach: 3, 25, 100 i 250 drzewo-dni podlewania, 3 i 15
+  zarejestrowanych drzew, 5 i 10 drzew pod opieką, 7 dni, 90 dni i rok opieki nad jednym
+  drzewem, 5 i 20 zdjęć.
+- **Regularność liczona w tygodniach** — „Stały rytm” (4 tygodnie z rzędu) i „Cały sezon”
+  (12 tygodni od maja do września). Młode drzewo potrzebuje obfitego podlania raz–dwa razy
+  w tygodniu, a nie codziennie.
+- **„Ranny ptaszek” i „Wieczorny podlewacz”** — za podlewanie w chłodnych godzinach, kiedy
+  mniej wody paruje.
+- **„Dobry sąsiad” i „Sąsiedzka pomoc”** — za podlewanie drzew, którymi nie opiekujesz się Ty.
+- **„Botanik”, „Dendrolog” i „Wędrowiec”** — za drzewa różnych gatunków i w różnych
+  miejscowościach.
+- **„Ratownik” i „Anioł stróż”** — za podlanie drzewa, które pilnie potrzebowało wody.
+  Aplikacja zapamiętuje teraz status drzewa w chwili podlania; podlania sprzed tej wersji
+  nie mają tej informacji, więc te dwie odznaki liczą się od dziś.
+
+### Zmieniono
+- Nowe odznaki obejmują też wcześniejszą pracę. Gdy wpadnie ich kilka naraz, zamiast długiej
+  listy pojawia się jeden komunikat „Masz N nowych odznak!”, a na stronie Osiągnięć czekają
+  oznaczone „Nowa!”.
+
 ## [2.3.0] — 2026-11-23
 
 Odzyskiwanie dostępu do konta.

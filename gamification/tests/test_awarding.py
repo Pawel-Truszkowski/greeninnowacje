@@ -19,7 +19,12 @@ from factories import LocalityFactory, TreeFactory, UserFactory, oversee
 from gamification.models import UserBadge
 from gamification.rules import BADGES_BY_CODE
 from gamification.selectors import user_stats
-from gamification.services import award_badges, new_badges_message, take_unseen
+from gamification.services import (
+    NAMED_IN_TOAST,
+    award_badges,
+    new_badges_message,
+    take_unseen,
+)
 from trees.models import Assignment, Tree, Watering
 from trees.services import (
     CaretakerConflict,
@@ -96,11 +101,100 @@ class TestStats:
         assert user_stats(user).registered == 1
 
 
+def water_at(tree, user, hour, *, day=None, status=None):
+    """A watering at a local hour (Europe/Warsaw is the project's zone)."""
+    day = day or timezone.localdate() - timedelta(days=1)
+    moment = timezone.make_aware(datetime.combine(day, datetime.min.time()).replace(hour=hour))
+    return Watering.objects.create(tree=tree, user=user, watered_at=moment, tree_status=status)
+
+
+class TestNewStats:
+    def test_morning_and_evening_are_local_hours(self, tree, user):
+        water_at(tree, user, 7)
+        water_at(tree, user, 8)  # same tree-day: counts once
+        water_at(TreeFactory(), user, 20)
+        water_at(TreeFactory(), user, 13)
+
+        stats = user_stats(user)
+
+        assert (stats.morning_tree_days, stats.evening_tree_days) == (1, 1)
+
+    def test_rescues_count_urgent_tree_days(self, tree, user):
+        water_at(tree, user, 10, status=Tree.Status.URGENT)
+        water_at(tree, user, 11, status=Tree.Status.OK)
+        water_at(TreeFactory(), user, 10, status=Tree.Status.SOON)
+        water_at(TreeFactory(), user, 10)  # recorded before the column existed
+
+        assert user_stats(user).rescue_tree_days == 1
+
+    def test_species_ignore_case_and_spaces(self, user):
+        for name in ("Lipa", " lipa ", "Klon", "Dąb"):
+            water(TreeFactory(species=name), user)
+
+        assert user_stats(user).species == 3
+
+    def test_localities(self, user):
+        here, there = LocalityFactory(), LocalityFactory()
+        water(TreeFactory(locality=here), user)
+        water(TreeFactory(locality=here), user)
+        water(TreeFactory(locality=there), user)
+
+        assert user_stats(user).localities == 2
+
+    def test_neighbour_is_a_tree_neither_registered_nor_cared_for(self, user):
+        own = TreeFactory(created_by=user)
+        cared = TreeFactory()
+        assign(cared, user)
+        stranger = TreeFactory()
+        for tree in (own, cared, stranger):
+            water(tree, user)
+
+        assert user_stats(user).neighbour_tree_days == 1
+
+    def test_care_counts_at_the_moment_of_watering(self, tree, user):
+        """Watered while it was someone else's job, taken into care later: still a neighbour."""
+        water(tree, user, days_ago=5)
+        assign(tree, user)
+        water(tree, user)
+
+        assert user_stats(user).neighbour_tree_days == 1
+
+    def test_care_that_ended_makes_it_a_neighbour_again(self, tree, user):
+        now = timezone.now()
+        Assignment.objects.create(
+            tree=tree,
+            user=user,
+            started_at=now - timedelta(days=20),
+            ended_at=now - timedelta(days=10),
+        )
+        water(tree, user, days_ago=15)
+        water(tree, user, days_ago=2)
+
+        assert user_stats(user).neighbour_tree_days == 1
+
+
 class TestFromServices:
+    def test_watering_stores_the_status_the_map_showed(self, tree, user):
+        Tree.objects.filter(pk=tree.pk).update(status=Tree.Status.URGENT)
+        tree.refresh_from_db()
+
+        watering, _ = record_watering(tree, user)
+
+        watering.refresh_from_db()
+        assert watering.tree_status == Tree.Status.URGENT
+        assert "rescuer" in codes(user)
+
+    def test_watering_a_fine_tree_is_no_rescue(self, tree, user):
+        watering, _ = record_watering(tree, user)
+
+        assert watering.tree_status == Tree.Status.OK
+        assert "rescuer" not in codes(user)
+
     def test_first_watering_earns_first_drop(self, tree, user):
+        """`tree` is somebody else's and nobody's in care — so it is a neighbour's help, too."""
         record_watering(tree, user)
 
-        assert codes(user) == {"first_drop"}
+        assert codes(user) == {"first_drop", "good_neighbour"}
 
     def test_taking_care_earns_caretaker(self, tree, user):
         assign_caretaker(tree, user)
@@ -162,9 +256,9 @@ class TestAwarding:
     def test_is_idempotent(self, tree, user):
         water(tree, user)
 
-        assert award_badges(user) == ["first_drop"]
+        assert award_badges(user) == ["first_drop", "good_neighbour"]
         assert award_badges(user) == []
-        assert UserBadge.objects.filter(user=user).count() == 1
+        assert UserBadge.objects.filter(user=user).count() == 2
 
     def test_counts_work_done_before_the_feature(self, user):
         """Waterings from before this release count: the stats read the permanent tables."""
@@ -194,7 +288,7 @@ class TestUnseen:
     def test_returns_new_badges_once(self, tree, user):
         record_watering(tree, user)
 
-        assert [badge.code for badge in take_unseen(user)] == ["first_drop"]
+        assert {badge.code for badge in take_unseen(user)} == {"first_drop", "good_neighbour"}
         assert take_unseen(user) == []
 
     def test_message_names_one_badge(self):
@@ -208,6 +302,32 @@ class TestUnseen:
 
         assert "Nowe odznaki" in message
         assert "Sadownik" in message and "Kronikarz" in message
+
+    def test_a_large_batch_is_counted_not_listed(self):
+        """Past work unlocking a pile of new badges at once — one short toast."""
+        batch = list(BADGES_BY_CODE.values())[: NAMED_IN_TOAST + 2]
+
+        message = new_badges_message(batch)
+
+        assert f"Masz {len(batch)} nowych odznak" in message
+        assert batch[0].name not in message
+
+    @pytest.mark.parametrize(
+        ("count", "word"),
+        [(4, "nowe odznaki"), (5, "nowych odznak"), (12, "nowych odznak"),
+         (22, "nowe odznaki"), (25, "nowych odznak")],
+    )  # fmt: skip
+    def test_polish_plural(self, count, word):
+        badge = BADGES_BY_CODE["first_drop"]
+
+        assert f"Masz {count} {word}!" in new_badges_message([badge] * count)
+
+    def test_up_to_the_limit_badges_are_named(self):
+        batch = list(BADGES_BY_CODE.values())[:NAMED_IN_TOAST]
+
+        message = new_badges_message(batch)
+
+        assert all(badge.name in message for badge in batch)
 
     def test_no_badges_no_message(self):
         assert new_badges_message([]) is None

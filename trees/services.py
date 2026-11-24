@@ -92,9 +92,16 @@ def recompute_tree_status(tree, today=None, save=True):
 
 @transaction.atomic
 def record_watering(tree, user, watered_at=None):
-    """Append a watering and refresh the status immediately — no waiting for cron."""
+    """Append a watering and refresh the status immediately — no waiting for cron.
+
+    The stored status (what the map showed) goes into the watering before the recompute, so
+    a watering of an URGENT tree stays recognisable as a rescue.
+    """
     watering = Watering.objects.create(
-        tree=tree, user=user, **({"watered_at": watered_at} if watered_at else {})
+        tree=tree,
+        user=user,
+        tree_status=tree.status,
+        **({"watered_at": watered_at} if watered_at else {}),
     )
     status = recompute_tree_status(tree)
     record(ActivityEvent.Kind.WATERING, user=user, tree=tree)

@@ -33,16 +33,21 @@
 
   <section class="card" aria-labelledby="badges-heading">
     <h2 id="badges-heading">Odznaki <span class="muted">({{ earned_count }} z {{ badges|length }})</span></h2>
-    <ul class="badge-grid">
-      {% for item in badges %}
-        <li class="badge-tile{% if item.earned %} earned{% else %} locked{% endif %}">
-          <span class="badge-icon" aria-hidden="true">{% if item.earned %}{{ item.badge.icon }}{% else %}🔒{% endif %}</span>
-          <span class="badge-name">{{ item.badge.name }}{% if item.new %} <span class="badge-new">Nowa!</span>{% endif %}</span>
-          <span class="badge-how">{{ item.badge.how }}</span>
-          <span class="badge-state">{% if item.earned %}✔ Zdobyta {{ item.awarded_at|date:"j E Y" }}{% else %}Jeszcze nie zdobyta{% endif %}</span>
-        </li>
-      {% endfor %}
-    </ul>
+    {# BADGES keeps each group together, so regroup needs no sorting. #}
+    {% regroup badges by badge.group as groups %}
+    {% for group in groups %}
+      <h3 class="badge-group">{{ group.grouper }}</h3>
+      <ul class="badge-grid">
+        {% for item in group.list %}
+          <li class="badge-tile{% if item.earned %} earned{% else %} locked{% endif %}">
+            <span class="badge-icon" aria-hidden="true">{% if item.earned %}{{ item.badge.icon }}{% else %}🔒{% endif %}</span>
+            <span class="badge-name">{{ item.badge.name }}{% if item.new %} <span class="badge-new">Nowa!</span>{% endif %}</span>
+            <span class="badge-how">{{ item.badge.how }}</span>
+            <span class="badge-state">{% if item.earned %}✔ Zdobyta {{ item.awarded_at|date:"j E Y" }}{% else %}Jeszcze nie zdobyta{% endif %}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endfor %}
   </section>
 
   <section class="card" aria-labelledby="ranking-heading">
