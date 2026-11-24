@@ -35,6 +35,18 @@ def take_unseen(user):
     return [row.badge for row in unseen if row.badge]
 
 
+# Up to this many badges are named in the toast; more (a returning volunteer whose past work
+# unlocks a whole batch of new badges at once) and the toast only counts them.
+NAMED_IN_TOAST = 3
+
+
+def _badges_word(count):
+    """Polish plural: 2–4 (but not 12–14) "nowe odznaki", otherwise "nowych odznak"."""
+    if count % 10 in (2, 3, 4) and count % 100 not in (12, 13, 14):
+        return "nowe odznaki"
+    return "nowych odznak"
+
+
 def new_badges_message(badges):
     """One toast, however many badges came at once (registration with a photo gives two)."""
     if not badges:
@@ -42,5 +54,10 @@ def new_badges_message(badges):
     if len(badges) == 1:
         badge = badges[0]
         return f"🏅 Nowa odznaka: {badge.icon} {badge.name}! Zajrzyj do Osiągnięć."
+    if len(badges) > NAMED_IN_TOAST:
+        return (
+            f"🏅 Masz {len(badges)} {_badges_word(len(badges))}! "
+            "Zajrzyj do Osiągnięć i zobacz, co udało Ci się zdobyć."
+        )
     names = ", ".join(f"{badge.icon} {badge.name}" for badge in badges)
     return f"🏅 Nowe odznaki: {names}! Zajrzyj do Osiągnięć."

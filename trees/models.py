@@ -157,6 +157,15 @@ class Watering(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="waterings"
     )
     watered_at = models.DateTimeField(default=timezone.now)
+    # The tree's status as the volunteer saw it, just before this watering ("Ratownik" badge).
+    # NULL for waterings recorded before the column existed — history cannot be rewritten.
+    tree_status = models.CharField(  # noqa: DJ001
+        "status drzewa przed podlaniem",
+        max_length=8,
+        choices=Tree.Status.choices,
+        null=True,
+        blank=True,
+    )
 
     objects = WateringQuerySet.as_manager()
 

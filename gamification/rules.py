@@ -21,6 +21,14 @@ class Stats:
     trees_cared: int = 0  # distinct trees ever in their care
     longest_care_days: int = 0  # the longest single assignment, ongoing ones up to today
     photos: int = 0
+    # Tree-days on a tree the person neither registered nor had in their care at the time.
+    neighbour_tree_days: int = 0
+    species: int = 0  # distinct species among the trees they watered
+    localities: int = 0  # distinct localities among the trees they watered
+    morning_tree_days: int = 0  # tree-days with a watering in MORNING_HOURS (local time)
+    evening_tree_days: int = 0  # tree-days with a watering in EVENING_HOURS (local time)
+    # Tree-days the tree was URGENT when watered; known only since `waterings.tree_status`.
+    rescue_tree_days: int = 0
 
 
 # Product decision, tuned with Greenowacje — tests read these constants, not the numbers.
@@ -91,15 +99,49 @@ def level_for(points: int) -> Level:
     )
 
 
-def longest_streak(days: Iterable[date]) -> int:
-    """The longest run of consecutive calendar days; repeats and order do not matter."""
+# Cool hours, when less water evaporates — the advice in the knowledge base. Local time.
+MORNING_HOURS = range(5, 9)  # 5:00–8:59
+EVENING_HOURS = range(19, 24)  # 19:00–23:59
+# The watering season for young trees: May to September.
+SEASON_MONTHS = range(5, 10)
+
+
+def _longest_run(points: Iterable[date], step: timedelta) -> int:
     best = run = 0
     previous = None
-    for day in sorted(set(days)):
-        run = run + 1 if previous and day - previous == timedelta(days=1) else 1
+    for point in sorted(set(points)):
+        run = run + 1 if previous and point - previous == step else 1
         best = max(best, run)
-        previous = day
+        previous = point
     return best
+
+
+def _week_of(day: date) -> date:
+    """The Monday of the day's week — a key for a calendar week."""
+    return day - timedelta(days=day.weekday())
+
+
+def longest_streak(days: Iterable[date]) -> int:
+    """The longest run of consecutive calendar days; repeats and order do not matter."""
+    return _longest_run(days, timedelta(days=1))
+
+
+def longest_week_streak(days: Iterable[date]) -> int:
+    """The longest run of consecutive calendar weeks (Mon–Sun) with at least one watering.
+
+    Weeks, not days: a young tree wants a deep watering once or twice a week, not a daily
+    splash — this is the regularity worth rewarding.
+    """
+    return _longest_run((_week_of(day) for day in days), timedelta(weeks=1))
+
+
+def best_season_weeks(days: Iterable[date]) -> int:
+    """The most calendar weeks with a watering inside one season (May–September of a year)."""
+    weeks_by_year: dict[int, set[date]] = {}
+    for day in days:
+        if day.month in SEASON_MONTHS:
+            weeks_by_year.setdefault(day.year, set()).add(_week_of(day))
+    return max((len(weeks) for weeks in weeks_by_year.values()), default=0)
 
 
 @dataclass(frozen=True)
@@ -109,29 +151,93 @@ class Badge:
     name: str
     how: str  # "how to earn it", shown on a locked badge too
     earned: Callable[[Stats], bool]
+    group: str  # heading on the achievements page; BADGES keeps each group together
 
 
+WATERING = "Podlewanie"
+REGULARITY = "Regularność"
+CARE = "Opieka"
+PLANTING = "Sadzenie"
+EXPLORING = "Odkrywanie"
+PHOTOS = "Zdjęcia"
+
+# Tiers are spread over time, so that after the first day (when the "first time" badges
+# come at once) something new is in reach every week or two of a season.
 BADGES = (
     Badge("first_drop", "💧", "Pierwsza kropla", "Podlej pierwsze drzewo.",
-          lambda s: s.tree_days >= 1),
+          lambda s: s.tree_days >= 1, WATERING),
+    Badge("three_drops", "💦", "Trzy krople", "Podlewaj drzewa przez 3 drzewo-dni.",
+          lambda s: s.tree_days >= 3, WATERING),
     Badge("watering_can", "🪣", "Konewka", "Podlewaj drzewa przez 10 drzewo-dni.",
-          lambda s: s.tree_days >= 10),
+          lambda s: s.tree_days >= 10, WATERING),
+    Badge("garden_hose", "🚿", "Wąż ogrodowy", "Podlewaj drzewa przez 25 drzewo-dni.",
+          lambda s: s.tree_days >= 25, WATERING),
     Badge("sprinkler", "🌧️", "Deszczownik", "Podlewaj drzewa przez 50 drzewo-dni.",
-          lambda s: s.tree_days >= 50),
+          lambda s: s.tree_days >= 50, WATERING),
+    Badge("rain_cloud", "⛈️", "Chmura deszczowa", "Podlewaj drzewa przez 100 drzewo-dni.",
+          lambda s: s.tree_days >= 100, WATERING),
+    Badge("downpour", "🌊", "Ulewa", "Podlewaj drzewa przez 250 drzewo-dni.",
+          lambda s: s.tree_days >= 250, WATERING),
+    Badge("rescuer", "🚑", "Ratownik", "Podlej drzewo, które pilnie potrzebowało wody.",
+          lambda s: s.rescue_tree_days >= 1, WATERING),
+    Badge("guardian_angel", "😇", "Anioł stróż",
+          "Podlej 10 razy drzewo, które pilnie potrzebowało wody.",
+          lambda s: s.rescue_tree_days >= 10, WATERING),
     Badge("week_streak", "🔥", "Tydzień z konewką", "Podlewaj 7 dni z rzędu.",
-          lambda s: longest_streak(s.watering_days) >= 7),
+          lambda s: longest_streak(s.watering_days) >= 7, REGULARITY),
+    Badge("steady_rhythm", "🎵", "Stały rytm", "Podlewaj w 4 kolejnych tygodniach.",
+          lambda s: longest_week_streak(s.watering_days) >= 4, REGULARITY),
+    Badge("whole_season", "☀️", "Cały sezon",
+          "Podlewaj w 12 różnych tygodniach jednego sezonu (maj–wrzesień).",
+          lambda s: best_season_weeks(s.watering_days) >= 12, REGULARITY),
+    Badge("early_bird", "🐦", "Ranny ptaszek",
+          "Podlej drzewa 3 razy między 5:00 a 9:00 — rano mniej wody paruje.",
+          lambda s: s.morning_tree_days >= 3, REGULARITY),
+    Badge("evening_waterer", "🌙", "Wieczorny podlewacz",
+          "Podlej drzewa 3 razy po 19:00 — wieczorem woda zostaje w ziemi.",
+          lambda s: s.evening_tree_days >= 3, REGULARITY),
     Badge("caretaker", "💚", "Opiekun", "Zaopiekuj się pierwszym drzewem.",
-          lambda s: s.trees_cared >= 1),
+          lambda s: s.trees_cared >= 1, CARE),
     Badge("grove_keeper", "🛡️", "Strażnik zagajnika", "Opiekuj się trzema różnymi drzewami.",
-          lambda s: s.trees_cared >= 3),
+          lambda s: s.trees_cared >= 3, CARE),
+    Badge("avenue_keeper", "🛤️", "Opiekun alei", "Opiekuj się pięcioma różnymi drzewami.",
+          lambda s: s.trees_cared >= 5, CARE),
+    Badge("forest_guardian", "🦉", "Strażnik lasu", "Opiekuj się dziesięcioma różnymi drzewami.",
+          lambda s: s.trees_cared >= 10, CARE),
+    Badge("first_week", "🗓️", "Pierwszy tydzień", "Opiekuj się jednym drzewem przez 7 dni.",
+          lambda s: s.longest_care_days >= 7, CARE),
     Badge("faithful", "🤝", "Wierny opiekun", "Opiekuj się jednym drzewem przez 30 dni.",
-          lambda s: s.longest_care_days >= 30),
+          lambda s: s.longest_care_days >= 30, CARE),
+    Badge("season_friend", "🍂", "Przyjaciel na sezon", "Opiekuj się jednym drzewem przez 90 dni.",
+          lambda s: s.longest_care_days >= 90, CARE),
+    Badge("year_together", "🎂", "Rok z drzewem", "Opiekuj się jednym drzewem przez rok.",
+          lambda s: s.longest_care_days >= 365, CARE),
+    Badge("good_neighbour", "🤗", "Dobry sąsiad",
+          "Podlej drzewo, którym nie opiekujesz się Ty — sąsiedzka pomoc się liczy.",
+          lambda s: s.neighbour_tree_days >= 1, CARE),
+    Badge("neighbourhood_help", "🏘️", "Sąsiedzka pomoc",
+          "Podlewaj nie swoje drzewa przez 10 drzewo-dni.",
+          lambda s: s.neighbour_tree_days >= 10, CARE),
     Badge("planter", "🌳", "Sadownik", "Zarejestruj pierwsze drzewo.",
-          lambda s: s.registered >= 1),
+          lambda s: s.registered >= 1, PLANTING),
+    Badge("three_saplings", "🌿", "Trzy sadzonki", "Zarejestruj trzy drzewa.",
+          lambda s: s.registered >= 3, PLANTING),
     Badge("forester", "🌲", "Leśnik", "Zarejestruj pięć drzew.",
-          lambda s: s.registered >= 5),
+          lambda s: s.registered >= 5, PLANTING),
+    Badge("grove_founder", "🏞️", "Założyciel zagajnika", "Zarejestruj piętnaście drzew.",
+          lambda s: s.registered >= 15, PLANTING),
+    Badge("botanist", "🔬", "Botanik", "Podlej drzewa trzech różnych gatunków.",
+          lambda s: s.species >= 3, EXPLORING),
+    Badge("dendrologist", "🍃", "Dendrolog", "Podlej drzewa pięciu różnych gatunków.",
+          lambda s: s.species >= 5, EXPLORING),
+    Badge("wanderer", "🧭", "Wędrowiec", "Podlej drzewa w dwóch różnych miejscowościach.",
+          lambda s: s.localities >= 2, EXPLORING),
     Badge("chronicler", "📷", "Kronikarz", "Dodaj pierwsze zdjęcie drzewa.",
-          lambda s: s.photos >= 1),
+          lambda s: s.photos >= 1, PHOTOS),
+    Badge("photo_reporter", "🎞️", "Fotoreporter", "Dodaj pięć zdjęć drzew.",
+          lambda s: s.photos >= 5, PHOTOS),
+    Badge("photo_chronicle", "🖼️", "Fotokronika", "Dodaj dwadzieścia zdjęć drzew.",
+          lambda s: s.photos >= 20, PHOTOS),
 )  # fmt: skip
 
 BADGES_BY_CODE = {badge.code: badge for badge in BADGES}

@@ -40,6 +40,7 @@ def my_achievements(request):
                     "name": item["badge"].name,
                     "icon": item["badge"].icon,
                     "how": item["badge"].how,
+                    "group": item["badge"].group,
                     "earned": item["earned"],
                     "awarded_at": item["awarded_at"],
                 }

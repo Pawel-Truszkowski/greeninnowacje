@@ -1399,6 +1399,12 @@ input[type="date"] {
 .level-progress::-webkit-progress-value { background: var(--green-600); border-radius: 999px; }
 .level-progress::-moz-progress-bar { background: var(--green-600); border-radius: 999px; }
 
+.badge-group {
+  margin: 20px 0 10px;
+  font-size: 1rem;
+  color: var(--green-700);
+}
+.badge-group:first-of-type { margin-top: 8px; }
 .badge-grid {
   list-style: none;
   margin: 0;

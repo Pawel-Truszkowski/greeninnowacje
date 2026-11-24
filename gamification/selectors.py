@@ -18,6 +18,8 @@ from trees.models import Assignment, Tree, TreePhoto, Watering
 from .models import UserBadge
 from .rules import (
     BADGES,
+    EVENING_HOURS,
+    MORNING_HOURS,
     POINTS_PER_PHOTO,
     POINTS_PER_REGISTERED,
     POINTS_PER_TREE_CARED,
@@ -35,17 +37,50 @@ def _local_day():
     return TruncDate("watered_at", tzinfo=timezone.get_current_timezone())
 
 
-def user_stats(user, *, now=None) -> Stats:
-    """Everything the rules need about one person: six small queries, however active."""
-    now = now or timezone.now()
-    tree_days = list(
-        Watering.objects.filter(user=user)
-        .annotate(day=_local_day())
-        .values_list("tree_id", "day")
-        .distinct()
+def _in_care(care, tree_id, moment):
+    return any(
+        tree == tree_id and started <= moment and (ended is None or moment < ended)
+        for tree, started, ended in care
     )
-    care = Assignment.objects.filter(user=user).values_list("tree_id", "started_at", "ended_at")
-    care = list(care)
+
+
+def user_stats(user, *, now=None) -> Stats:
+    """Everything the rules need about one person: four small queries, however active.
+
+    Waterings are read row by row (one person's history: hundreds of rows, not millions) and
+    folded into tree-days in Python — the hour, the status, the species and the care at that
+    moment are all per watering, and one pass is simpler than a query for each.
+    """
+    now = now or timezone.now()
+    care = list(
+        Assignment.objects.filter(user=user).values_list("tree_id", "started_at", "ended_at")
+    )
+    waterings = Watering.objects.filter(user=user).values_list(
+        "tree_id",
+        "watered_at",
+        "tree_status",
+        "tree__species",
+        "tree__locality_id",
+        "tree__created_by_id",
+    )
+
+    tree_days, neighbour, morning, evening, rescue = set(), set(), set(), set(), set()
+    species, localities = set(), set()
+    for tree_id, watered_at, status, kind, locality_id, created_by_id in waterings:
+        local = timezone.localtime(watered_at)
+        key = (tree_id, local.date())
+        tree_days.add(key)
+        species.add(kind.strip().lower())
+        localities.add(locality_id)
+        if local.hour in MORNING_HOURS:
+            morning.add(key)
+        if local.hour in EVENING_HOURS:
+            evening.add(key)
+        if status == Tree.Status.URGENT:
+            rescue.add(key)
+        if created_by_id != user.pk and not _in_care(care, tree_id, watered_at):
+            neighbour.add(key)
+
     return Stats(
         tree_days=len(tree_days),
         watering_days=tuple(sorted({day for _, day in tree_days})),
@@ -55,6 +90,12 @@ def user_stats(user, *, now=None) -> Stats:
             ((ended or now) - started for _, started, ended in care), default=timedelta()
         ).days,
         photos=TreePhoto.objects.filter(uploaded_by=user).count(),
+        neighbour_tree_days=len(neighbour),
+        species=len(species - {""}),
+        localities=len(localities),
+        morning_tree_days=len(morning),
+        evening_tree_days=len(evening),
+        rescue_tree_days=len(rescue),
     )
 
 
