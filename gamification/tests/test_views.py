@@ -12,6 +12,8 @@ from django.utils import timezone
 
 from factories import TreeFactory, UserFactory
 from gamification.models import UserBadge
+from gamification.rules import WATERING_NOTE
+from gamification.selectors import NEW_FOR
 from trees.models import Assignment
 from trees.tests.factories import water
 
@@ -51,11 +53,34 @@ class TestPage:
         assert "Nowa!" in page
         assert "Anna Kowalska (Ty)" in page
 
-    def test_new_marker_shows_once(self, client, volunteer, tree):
+    def test_new_marker_survives_a_visit(self, client, volunteer, tree):
         water(tree, volunteer)
         client.get(PAGE)
 
+        assert "Nowa!" in client.get(PAGE).content.decode()
+
+    def test_new_marker_survives_the_toast(self, client, volunteer, tree):
+        """A batch toast only counts the badges — the page must still show which ones."""
+        client.post(reverse("trees:water", kwargs={"tree_id": tree.pk}))
+        assert not UserBadge.objects.filter(user=volunteer, seen_at__isnull=True).exists()
+
+        assert "Nowa!" in client.get(PAGE).content.decode()
+
+    def test_new_marker_goes_after_a_week(self, client, volunteer, tree):
+        water(tree, volunteer)
+        client.get(PAGE)
+        UserBadge.objects.filter(user=volunteer).update(
+            awarded_at=timezone.now() - NEW_FOR - timedelta(minutes=1)
+        )
+
         assert "Nowa!" not in client.get(PAGE).content.decode()
+
+    def test_badges_speak_of_waterings_not_tree_days(self, client, volunteer):
+        page = client.get(PAGE).content.decode()
+
+        assert "drzewo-dni" not in page
+        assert "Podlej drzewa 3 razy." in page
+        assert WATERING_NOTE in page
 
     def test_time_alone_earns_a_badge(self, client, volunteer, tree):
         """Thirty days of care is earned by waiting — the page awards it on the next visit."""
@@ -133,6 +158,8 @@ class TestApi:
         assert data["level"]["number"] == 1
         first_drop = next(badge for badge in data["badges"] if badge["code"] == "first_drop")
         assert first_drop["earned"] is True
+        assert first_drop["new"] is True
+        assert first_drop["group"] == "Podlewanie"
         assert any(row["is_me"] for row in data["ranking"]["rows"])
 
     def test_carries_no_e_mail(self, client, volunteer, tree):

@@ -24,12 +24,18 @@ from .rules import (
     POINTS_PER_REGISTERED,
     POINTS_PER_TREE_CARED,
     POINTS_PER_TREE_DAY,
+    WATERING,
+    WATERING_NOTE,
     Stats,
     level_for,
     points_for,
 )
 
 RANKING_DAYS = 30
+# How long a badge carries "Nowa!" on the page. Counted from `awarded_at`, not `seen_at`:
+# the toast after an action marks a badge seen at once, and a toast that only counts a batch
+# ("Masz 7 nowych odznak!") must still let the page show which ones they were.
+NEW_FOR = timedelta(days=7)
 RANKING_SIZE = 10
 
 
@@ -181,9 +187,10 @@ def leaderboard(*, me=None, days=RANKING_DAYS, size=RANKING_SIZE, today=None):
     }
 
 
-def achievements(user):
+def achievements(user, *, now=None):
     """Everything the achievements page and `/api/me/achievements` show."""
-    stats = user_stats(user)
+    now = now or timezone.now()
+    stats = user_stats(user, now=now)
     points = points_for(stats)
     owned = {row.code: row for row in UserBadge.objects.filter(user=user)}
     return {
@@ -195,10 +202,12 @@ def achievements(user):
                 "badge": badge,
                 "earned": badge.code in owned,
                 "awarded_at": owned[badge.code].awarded_at if badge.code in owned else None,
-                "new": badge.code in owned and owned[badge.code].seen_at is None,
+                "new": badge.code in owned and owned[badge.code].awarded_at > now - NEW_FOR,
             }
             for badge in BADGES
         ],
         "earned_count": sum(1 for badge in BADGES if badge.code in owned),
+        "watering_group": WATERING,
+        "watering_note": WATERING_NOTE,
         "ranking": leaderboard(me=user),
     }

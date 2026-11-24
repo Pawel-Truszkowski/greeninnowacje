@@ -154,6 +154,11 @@ class Badge:
     group: str  # heading on the achievements page; BADGES keeps each group together
 
 
+# "Tree-day" is the unit in code only. On the page a watering is a watering, and this line,
+# shown under the "Podlewanie" heading, says once that each tree counts once a day.
+WATERING_NOTE = "Każde drzewo liczy się raz dziennie — podlewaj z głową, nie na wyścigi."
+
+
 WATERING = "Podlewanie"
 REGULARITY = "Regularność"
 CARE = "Opieka"
@@ -166,17 +171,17 @@ PHOTOS = "Zdjęcia"
 BADGES = (
     Badge("first_drop", "💧", "Pierwsza kropla", "Podlej pierwsze drzewo.",
           lambda s: s.tree_days >= 1, WATERING),
-    Badge("three_drops", "💦", "Trzy krople", "Podlewaj drzewa przez 3 drzewo-dni.",
+    Badge("three_drops", "💦", "Trzy krople", "Podlej drzewa 3 razy.",
           lambda s: s.tree_days >= 3, WATERING),
-    Badge("watering_can", "🪣", "Konewka", "Podlewaj drzewa przez 10 drzewo-dni.",
+    Badge("watering_can", "🪣", "Konewka", "Podlej drzewa 10 razy.",
           lambda s: s.tree_days >= 10, WATERING),
-    Badge("garden_hose", "🚿", "Wąż ogrodowy", "Podlewaj drzewa przez 25 drzewo-dni.",
+    Badge("garden_hose", "🚿", "Wąż ogrodowy", "Podlej drzewa 25 razy.",
           lambda s: s.tree_days >= 25, WATERING),
-    Badge("sprinkler", "🌧️", "Deszczownik", "Podlewaj drzewa przez 50 drzewo-dni.",
+    Badge("sprinkler", "🌧️", "Deszczownik", "Podlej drzewa 50 razy.",
           lambda s: s.tree_days >= 50, WATERING),
-    Badge("rain_cloud", "⛈️", "Chmura deszczowa", "Podlewaj drzewa przez 100 drzewo-dni.",
+    Badge("rain_cloud", "⛈️", "Chmura deszczowa", "Podlej drzewa 100 razy.",
           lambda s: s.tree_days >= 100, WATERING),
-    Badge("downpour", "🌊", "Ulewa", "Podlewaj drzewa przez 250 drzewo-dni.",
+    Badge("downpour", "🌊", "Ulewa", "Podlej drzewa 250 razy.",
           lambda s: s.tree_days >= 250, WATERING),
     Badge("rescuer", "🚑", "Ratownik", "Podlej drzewo, które pilnie potrzebowało wody.",
           lambda s: s.rescue_tree_days >= 1, WATERING),
@@ -216,7 +221,7 @@ BADGES = (
           "Podlej drzewo, którym nie opiekujesz się Ty — sąsiedzka pomoc się liczy.",
           lambda s: s.neighbour_tree_days >= 1, CARE),
     Badge("neighbourhood_help", "🏘️", "Sąsiedzka pomoc",
-          "Podlewaj nie swoje drzewa przez 10 drzewo-dni.",
+          "Podlej 10 razy drzewa, którymi nie opiekujesz się Ty.",
           lambda s: s.neighbour_tree_days >= 10, CARE),
     Badge("planter", "🌳", "Sadownik", "Zarejestruj pierwsze drzewo.",
           lambda s: s.registered >= 1, PLANTING),

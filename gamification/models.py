@@ -19,7 +19,8 @@ class UserBadge(models.Model):
     )
     code = models.CharField("odznaka", max_length=32)
     awarded_at = models.DateTimeField("zdobyta", default=timezone.now)
-    # NULL until the person has been told — drives the one-off "Nowa odznaka!" message.
+    # NULL until the person has been told — drives the one-off "Nowa odznaka!" toast only;
+    # the "Nowa!" marker on the page comes from `awarded_at` (`selectors.NEW_FOR`).
     seen_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:

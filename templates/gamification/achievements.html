@@ -37,6 +37,7 @@
     {% regroup badges by badge.group as groups %}
     {% for group in groups %}
       <h3 class="badge-group">{{ group.grouper }}</h3>
+      {% if group.grouper == watering_group %}<p class="muted tight">{{ watering_note }}</p>{% endif %}
       <ul class="badge-grid">
         {% for item in group.list %}
           <li class="badge-tile{% if item.earned %} earned{% else %} locked{% endif %}">
