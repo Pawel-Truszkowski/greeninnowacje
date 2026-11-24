@@ -33,8 +33,11 @@ Więcej odznak — coś nowego do zdobycia przez cały sezon, nie tylko pierwsze
 
 ### Zmieniono
 - Nowe odznaki obejmują też wcześniejszą pracę. Gdy wpadnie ich kilka naraz, zamiast długiej
-  listy pojawia się jeden komunikat „Masz N nowych odznak!”, a na stronie Osiągnięć czekają
-  oznaczone „Nowa!”.
+  listy pojawia się jeden komunikat „Masz N nowych odznak!”.
+- Oznaczenie **„Nowa!”** przy odznace widać przez 7 dni od jej zdobycia (wcześniej znikało
+  po pierwszym komunikacie albo pierwszej wizycie na stronie Osiągnięć).
+- Opisy odznak mówią o podlaniach („Podlej drzewa 10 razy”) zamiast o „drzewo-dniach”;
+  pod nagłówkiem „Podlewanie” jest wyjaśnienie, że każde drzewo liczy się raz dziennie.
 
 ## [2.3.0] — 2026-11-23
 

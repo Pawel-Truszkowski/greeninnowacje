@@ -43,6 +43,7 @@ def my_achievements(request):
                     "group": item["badge"].group,
                     "earned": item["earned"],
                     "awarded_at": item["awarded_at"],
+                    "new": item["new"],
                 }
                 for item in data["badges"]
             ],

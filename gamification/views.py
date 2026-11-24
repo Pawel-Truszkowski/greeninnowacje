@@ -17,8 +17,9 @@ def announce_new_badges(request):
 def achievements_view(request):
     """'Osiągnięcia': level, badges and the 30-day ranking.
 
-    Awards first, so a badge earned with time alone (30 days of care) appears here. Badges
-    are marked seen only after the page has read them, so they still carry "Nowa!" this once.
+    Awards first, so a badge earned with time alone (30 days of care) appears here. Then
+    marks them seen, so no toast announces later what this page has just shown; "Nowa!"
+    does not depend on that — it lasts `selectors.NEW_FOR` from earning.
     """
     award_badges(request.user)
     context = achievements(request.user)
